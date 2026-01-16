@@ -15,6 +15,7 @@ from py_clob_client.clob_types import (
 from py_clob_client.order_builder.constants import BUY, SELL
 
 from .config import Settings
+from .utils import mask_credential
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +46,11 @@ def get_client(settings: Settings) -> ClobClient:
     logger.info("Deriving User API credentials from private key...")
     derived_creds = _cached_client.create_or_derive_api_creds()
     _cached_client.set_api_creds(derived_creds)
-    
+
     logger.info("✅ API credentials configured")
-    logger.info(f"   API Key: {derived_creds.api_key}")
+    logger.info(f"   API Key: {mask_credential(derived_creds.api_key)}")
     logger.info(f"   Wallet: {_cached_client.get_address()}")
-    logger.info(f"   Funder: {settings.funder}")
+    logger.info(f"   Funder: {settings.funder if settings.funder else 'None'}")
     
     return _cached_client
 

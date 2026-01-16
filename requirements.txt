@@ -1,5 +1,5 @@
-# Polymarket API client
-py-clob-client
+# Polymarket API client - pinned to specific version for stability
+py-clob-client==0.26.0
 
 # WebSocket client for market data (CLOB WSS)
 websockets==12.0
@@ -11,4 +11,12 @@ httpx==0.27.0
 python-dotenv==1.0.1
 
 # Rich console output (optional, falls back to basic logging if not available)
-rich>=13.0.0
+rich==13.7.1
+
+# Web3 for on-chain balance verification
+web3==6.20.0
+
+# Required by py-clob-client
+py-eip712-structs==2.0.0
+eth-account==0.11.2
+eth-keys==0.4.0

@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from py_clob_client.client import ClobClient
 from py_clob_client.clob_types import ApiCreds
+from utils import mask_credential
 
 load_dotenv()
 
@@ -45,7 +46,7 @@ def main():
         print("\n2. Deriving API credentials from private key...")
         creds = client.create_or_derive_api_creds()
         client.set_api_creds(creds)
-        print(f"   ✓ API Key: {creds.api_key}")
+        print(f"   ✓ API Key: {mask_credential(creds.api_key)}")
         print(f"   ✓ Credentials configured")
         
         # Get wallet address
