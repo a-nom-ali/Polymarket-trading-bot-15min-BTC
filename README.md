@@ -1,681 +1,400 @@
-# Multi-Provider Trading Bot
+# Professional Multi-Provider Trading Bot
 
-Professional trading bot with support for multiple providers (Polymarket, Luno) and multiple strategies (binary arbitrage, copy trading, and more).
+**Advanced algorithmic trading bot** with support for **8 exchanges**, **11 proven strategies**, and a **real-time web dashboard**.
 
-> 🆕 **Multi-Provider Architecture**: Trade on Polymarket prediction markets AND Luno cryptocurrency exchange with a unified interface. See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
+> 🌐 **NEW: Web Dashboard** - Monitor and control your bot with a beautiful real-time web interface! See [WEB_DASHBOARD.md](WEB_DASHBOARD.md)
 
-> 🎯 **Multi-Strategy Support**: Run different trading strategies in parallel or combine them for maximum profit. See [STRATEGIES.md](STRATEGIES.md) for available strategies.
+> 🎯 **Multi-Provider Architecture** - Trade on 8 platforms: Polymarket, Luno, Kalshi, Binance, Coinbase, Bybit, Kraken, dYdX
 
-> 💎 **Capital-Based Trading Profiles**: Automatically optimize trading parameters based on your balance! Choose from 5 profiles ($100-$5,000+) with research-backed profit thresholds. See [PROFILES.md](PROFILES.md) for details.
+> 💎 **11 Trading Strategies** - From simple arbitrage to advanced statistical trading and funding rate capture
 
-> 📚 **New to the bot?** Check out the [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) for a quick start guide!
+> 📊 **Research-Backed** - All strategies based on documented market opportunities with real performance data
 
-## 🏗️ Architecture Overview
+## 🌟 Quick Start
 
-This bot is built with a **three-layer architecture** for maximum flexibility:
+```bash
+# Install dependencies
+pip install -r requirements.txt
+pip install -r requirements-web.txt  # For web dashboard
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Trading Bot System                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐  │
-│  │   Provider   │─────▶│   Strategy   │─────▶│     Bot      │  │
-│  │    Layer     │      │    Layer     │      │ Orchestrator │  │
-│  └──────────────┘      └──────────────┘      └──────────────┘  │
-│         │                     │                      │           │
-│         ▼                     ▼                      ▼           │
-│  • Polymarket          • Binary Arb          • Single           │
-│  • Luno (REST+WS)      • Copy Trading        • Multi            │
-│  • Extensible          • Cross-Exchange      • Risk Mgmt        │
-│                        • Market Making                           │
-│                                                                   │
-└─────────────────────────────────────────────────────────────────┘
+# Start web dashboard
+python -m src.web.server --port 8080
+
+# Open browser
+http://localhost:8080
+
+# Or run bot directly
+python main.py
 ```
 
-### Supported Providers
+## 📊 Supported Exchanges (8)
 
-- **Polymarket**: Prediction markets (binary outcome tokens)
-- **Luno**: Cryptocurrency spot exchange (BTC/ZAR, ETH/ZAR, etc.)
-- **More coming soon**: Binance, Kraken, Coinbase
+| Exchange | Type | Volume | Best For |
+|----------|------|--------|----------|
+| **Polymarket** | Prediction Market | High | Binary arbitrage, high-probability bonds |
+| **Kalshi** | Prediction Market | $23.8B (2025) | Cross-platform arbitrage with Polymarket |
+| **Binance** | Crypto Spot | Largest globally | Cross-exchange arb, triangular arb |
+| **Coinbase** | Crypto Spot | Largest US | Cross-exchange arb (US premium) |
+| **Bybit** | Derivatives | Leading | Funding rate arb, liquidation sniping |
+| **Kraken** | Crypto Spot | Trusted | Fiat pairs, statistical arb |
+| **dYdX** | DeFi Derivatives | $1.5T+ volume | Funding rate arb (hourly funding) |
+| **Luno** | Crypto Spot | South Africa | ZAR trading pairs |
 
-### Available Strategies
+## 🎯 Trading Strategies (11)
 
-- ✅ **Binary Arbitrage** (Implemented) - Buy both sides when total < $1.00
-- 🔜 **Copy Trading** (Coming Soon) - Mirror successful traders
-- 🔜 **Cross-Exchange Arbitrage** (Coming Soon) - Buy low on one exchange, sell high on another
-- 🔜 **Triangular Arbitrage** (Coming Soon) - Exploit pricing across 3+ pairs
-- 🔜 **Market Making** (Coming Soon) - Post bid/ask spreads
-- 🔜 **Grid Trading** (Coming Soon) - Buy/sell at predefined levels
+### Arbitrage Strategies
+
+| Strategy | ROI/Trade | Frequency | Risk | Capital |
+|----------|-----------|-----------|------|---------|
+| **Binary Arbitrage** | 0.5-3% | 1-5/day | Low | $50-$5K |
+| **High-Probability Bond** | 1-5% (1800% APY) | 5-20/day | Low | $100+ |
+| **Cross-Platform Arb** | 0.5-5% | 1-10/day | Medium | $500+ |
+| **Cross-Exchange Arb** | 0.3-1.5% | 5-20/day | Low | $500-$5K |
+| **Triangular Arb** | 0.1-0.5% | 10-50/day | Low | $200-$2K |
+| **Statistical Arb** | 0.5-2% | 3-10/day | Medium | $1K-$5K |
+
+### Advanced Strategies
+
+| Strategy | APY | Type | Risk | Capital |
+|----------|-----|------|------|---------|
+| **Funding Rate Arb** | 50-200% | Delta-neutral | Low | $1K-$10K |
+| **Basis Trading** | 80-200% | Spot-futures | Low | $2K-$10K |
+| **Market Making** | 80-200% | Liquidity provision | High | $2K+ |
+| **Momentum Trading** | 5-30%/trade | Directional | Medium | $500+ |
+| **Liquidation Sniping** | 2-10%/event | Flash crashes | **HIGH** | $500-$5K |
 
 See [STRATEGIES.md](STRATEGIES.md) for detailed strategy documentation.
 
----
+## 🏗️ Architecture
 
-## 🎯 Default Strategy: Binary Arbitrage
-
-**Pure arbitrage**: Buy both sides (UP + DOWN) when total cost < $1.00 to guarantee profit regardless of outcome.
-
-### Example:
 ```
-BTC goes up (UP):     $0.48
-BTC goes down (DOWN): $0.51
-─────────────────────────
-Total:                $0.99  ✅ < $1.00
-Profit:               $0.01 per share (1.01%)
+┌──────────────────────────────────────────────────────────────────┐
+│                     Trading Bot System                            │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐   │
+│  │   Provider   │─────▶│   Strategy   │─────▶│     Bot      │   │
+│  │    Layer     │      │    Layer     │      │ Orchestrator │   │
+│  └──────────────┘      └──────────────┘      └──────────────┘   │
+│         │                     │                      │            │
+│         ▼                     ▼                      ▼            │
+│  • 8 Exchanges          • 11 Strategies       • Web Dashboard    │
+│  • REST + WS            • Multi-provider      • Risk Mgmt        │
+│  • Unified API          • Research-backed     • Live Stats       │
+│                                                                    │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-**Why does it work?**
-- At close, ONE of the two sides pays $1.00 per share
-- If you paid $0.99 total, you earn $0.01 no matter which side wins
-- It's **guaranteed profit** (pure arbitrage)
+**3-Layer Design:**
+1. **Provider Layer** - Abstract exchange APIs into common interface
+2. **Strategy Layer** - Trading logic independent of exchange
+3. **Bot Orchestrator** - Execution, risk management, statistics
 
----
+See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
 
-## 🚀 Installation
+## 🌐 Web Dashboard
 
-### 1. Clone the repository:
+**Real-time monitoring and control** with WebSocket updates:
+
+- 📊 Live statistics (trades, win rate, profit/loss, balance)
+- 📈 Performance chart with cumulative profits
+- 🎮 Start/Stop/Pause controls
+- 🔔 Trade execution notifications
+- 📋 Recent trade history
+- ⚙️ Strategy & provider selection
+
+**Start Dashboard:**
 ```bash
-git clone https://github.com/terauss/Polymarket-trading-bot-15min-BTC
-cd Polymarket-trading-bot-15min-BTC
+pip install -r requirements-web.txt
+python -m src.web.server --port 8080
 ```
 
-### 2. Create virtual environment and install dependencies:
+See [WEB_DASHBOARD.md](WEB_DASHBOARD.md) for complete documentation.
+
+## 📚 Installation
+
+### Prerequisites
+
+- Python 3.9+
+- API keys for your chosen exchange(s)
+- Wallet/credentials for trading
+
+### Step 1: Install Dependencies
+
 ```bash
+# Clone repository
+git clone <repository-url>
+cd trading-bot
+
+# Create virtual environment
 python -m venv .venv
-.\.venv\Scripts\activate  # Windows
-# or: source .venv/bin/activate  # Linux/Mac
+source .venv/bin/activate  # Linux/Mac
+# or: .venv\Scripts\activate  # Windows
+
+# Install core dependencies
 pip install -r requirements.txt
+
+# Install web dashboard (optional)
+pip install -r requirements-web.txt
 ```
 
-### 3. Configure environment variables:
+### Step 2: Configure Environment
 
-**Choose your provider and strategy:**
+Choose a configuration template based on your strategy:
 
 ```bash
-# Polymarket + Binary Arbitrage (Default)
-cp .env.example.polymarket.binary_arb .env
+# Simple arbitrage strategies
+cp .env.example.polymarket .env           # Binary arbitrage
+cp .env.example.kalshi .env               # Cross-platform arb
+cp .env.example.high_probability_bond .env # High-prob bonds
 
-# Luno + Cross-Exchange Arbitrage (Coming Soon)
-cp .env.example.luno .env
+# Advanced strategies
+cp .env.example.binance .env              # Cross-exchange arb
+cp .env.example.advanced_strategies .env  # All advanced strategies
+
+# Edit configuration
+nano .env
 ```
 
-**Quick Start with Trading Profiles** (Recommended for Polymarket):
-```bash
-# Option 1: Auto-select profile based on your balance
-cp .env.example.auto .env
+### Step 3: Add API Keys
 
-# Option 2: Choose a specific profile for your capital tier
-cp .env.example.learning .env    # $100-$200
-cp .env.example.testing .env     # $200-$500
-cp .env.example.scaling .env     # $500-$2,000
-cp .env.example.advanced .env    # $2,000-$5,000
-cp .env.example.professional .env  # $5,000+
-```
-
-Then edit `.env` and add your credentials. The profile will automatically optimize all trading parameters!
-
-**See [PROFILES.md](PROFILES.md) for detailed profile documentation and expected performance.**
-
-**Manual Configuration** (Advanced users):
-```bash
-cp .env.example .env
-```
-
-Then configure each variable (see detailed explanation below).
-
----
-
-## 💎 Trading Profiles (Capital-Based Optimization)
-
-This bot includes **automatic profile selection** that optimizes trading parameters based on your capital. Each profile is calibrated using real 2025 Polymarket market data.
-
-### Quick Comparison
-
-| Profile | Capital | Spread | Position | Max Daily Trades | Daily Profit* |
-|---------|---------|--------|----------|------------------|---------------|
-| Learning | $100-$200 | 3.0% | 5 shares | 10 | $0.25-$0.50 |
-| Testing | $200-$500 | 2.5% | 10 shares | 20 | $1.25-$2.50 |
-| Scaling | $500-$2K | 2.0% | 25 shares | 40 | $2.50-$10 |
-| Advanced | $2K-$5K | 1.5% | 50 shares | 60 | $30-$50 |
-| Professional | $5K+ | 1.0% | 100 shares | 100 | $50-$100+ |
-
-*Conservative estimates per successful trade.
-
-### Why Use Profiles?
-
-✅ **Research-Based**: Calibrated with 2025 market data (fees, spreads, success rates)
-✅ **Automatic Risk Management**: Daily loss limits, position caps, trade frequency controls
-✅ **Optimized for Capital**: Tighter spreads = more opportunities as your capital grows
-✅ **Set & Forget**: Just choose your tier, bot handles the rest
-
-### Getting Started
-
-**Option 1: Auto-Selection** (Recommended)
-```bash
-cp .env.example.auto .env
-# Set TRADING_PROFILE=auto
-# Bot automatically selects optimal profile based on your balance
-```
-
-**Option 2: Manual Selection**
-```bash
-cp .env.example.scaling .env  # Example: Scaling tier
-# Set TRADING_PROFILE=scaling
-```
-
-### 📚 Full Documentation
-
-See **[PROFILES.md](PROFILES.md)** for:
-- Detailed profile parameters and expected performance
-- Profit trajectory projections (conservative & aggressive)
-- Recommended progression path (Learning → Professional)
-- Risk management details
-- Customization options
-
-See **[PROFIT_ANALYSIS.md](PROFIT_ANALYSIS.md)** for:
-- Minimum budget recommendations
-- Real-world success cases
-- Fee structure analysis
-- Optimization strategies
-
----
-
-## 🔐 Environment Variables (.env)
-
-> Note: `.env` is loaded without overriding existing environment variables.
-> This means values you set in the terminal / CI will take precedence over `.env`.
-
-### Provider Selection
-
-| Variable | Description | Values |
-|----------|-------------|--------|
-| `PROVIDER` | Trading provider to use | `polymarket`, `luno` |
-| `STRATEGY` | Trading strategy to use | `binary_arbitrage`, `copy_trading`, `cross_exchange`, etc. |
-
-### Polymarket Configuration
-
-| Variable | Description | How to Get It |
-|----------|-------------|---------------|
-| `POLYMARKET_PRIVATE_KEY` | Your wallet's private key (starts with `0x`) | Export from your wallet (MetaMask, etc.) or use the one linked to your Polymarket account |
-| `POLYMARKET_API_KEY` | API key for Polymarket CLOB | Run `python -m src.generate_api_key` |
-| `POLYMARKET_API_SECRET` | API secret for Polymarket CLOB | Run `python -m src.generate_api_key` |
-| `POLYMARKET_API_PASSPHRASE` | API passphrase for Polymarket CLOB | Run `python -m src.generate_api_key` |
-
-### Luno Configuration
-
-| Variable | Description | How to Get It |
-|----------|-------------|---------------|
-| `LUNO_API_KEY_ID` | API key ID | Create at https://www.luno.com/wallet/security/api_keys |
-| `LUNO_API_KEY_SECRET` | API key secret | Create at https://www.luno.com/wallet/security/api_keys |
-| `LUNO_DEFAULT_PAIR` | Default trading pair | `XBTZAR`, `ETHZAR`, `XRPZAR`, etc. |
-
-### Wallet Configuration
-
-| Variable | Description | Value |
-|----------|-------------|-------|
-| `POLYMARKET_SIGNATURE_TYPE` | Type of wallet signature | `0` = EOA (MetaMask, hardware wallet)<br>`1` = Magic.link (email login on Polymarket)<br>`2` = Gnosis Safe |
-| `POLYMARKET_FUNDER` | Proxy wallet address (only for Magic.link users) | Leave **empty** for EOA wallets. For Magic.link, see instructions below. |
-
-#### ⚠️ Important: Magic.link users (signature_type=1)
-
-If you use **email login** on Polymarket (Magic.link), you have **two addresses**:
-
-1. **Signer address** (derived from your private key): This is the wallet that signs transactions.
-2. **Proxy wallet address** (POLYMARKET_FUNDER): This is where your funds actually live on Polymarket.
-
-**To find your proxy wallet address:**
-1. Go to your Polymarket profile: `https://polymarket.com/@YOUR_USERNAME`
-2. Click the **"Copy address"** button next to your balance
-3. This is your `POLYMARKET_FUNDER` — it should look like `0x...` and is **different** from your signer address
-
-**Common mistake:** Setting `POLYMARKET_FUNDER` to your Polygon wallet address (where you might have USDC on-chain) instead of the Polymarket proxy address. This causes `"invalid signature"` errors.
-
-**How to verify:** Run `python -m src.test_balance`:
-- "Getting USDC balance" shows the balance via Polymarket API (should show your funds)
-- "Balance on-chain" queries Polygon directly (may show $0 if your funds are in the proxy, which is normal)
-
-### Trading Configuration
-
-| Variable | Description | Default | Recommended |
-|----------|-------------|---------|-------------|
-| `TARGET_PAIR_COST` | Maximum combined cost to trigger arbitrage | `0.99` | `0.99` - `0.995` |
-| `ORDER_SIZE` | Number of shares per trade (minimum is 5) | `50` | Start with `5`, increase after testing |
-| `ORDER_TYPE` | Order time-in-force (`FOK`, `FAK`, `GTC`) | `FOK` | Use `FOK` to avoid leaving one leg open |
-| `DRY_RUN` | Simulation mode | `false` | Start with `true`, change to `false` for live trading |
-| `SIM_BALANCE` | Starting cash used in simulation mode (`DRY_RUN=true`) | `0` | e.g. `100` |
-| `COOLDOWN_SECONDS` | Minimum seconds between executions | `10` | Increase if you see repeated triggers |
-
-### Risk Management (New) ⚡
-
-| Variable | Description | Default | Recommended |
-|----------|-------------|---------|-------------|
-| `MAX_DAILY_LOSS` | Maximum loss per day in USDC (0 = disabled) | `0` | e.g. `50.0` to limit daily losses |
-| `MAX_POSITION_SIZE` | Maximum position size in USDC per trade (0 = disabled) | `0` | e.g. `100.0` to cap trade sizes |
-| `MAX_TRADES_PER_DAY` | Maximum number of trades per day (0 = disabled) | `0` | e.g. `20` to limit trading frequency |
-| `MIN_BALANCE_REQUIRED` | Minimum balance required to continue trading | `10.0` | Adjust based on your risk tolerance |
-| `MAX_BALANCE_UTILIZATION` | Maximum % of balance to use per trade (0.8 = 80%) | `0.8` | Lower = more conservative |
-
-### Statistics & Logging (New) 📊
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `ENABLE_STATS` | Enable statistics tracking and trade history | `true` |
-| `TRADE_LOG_FILE` | Path to trade history JSON file | `trades.json` |
-| `USE_RICH_OUTPUT` | Use rich console formatting (requires `rich` package) | `true` |
-| `VERBOSE` | Enable verbose (DEBUG) logging | `false` |
-
-### Optional
-
-| Variable | Description |
-|----------|-------------|
-| `POLYMARKET_MARKET_SLUG` | Force a specific market slug (leave empty for auto-discovery) |
-| `USE_WSS` | Enable Polymarket Market WebSocket feed (`true`/`false`) |
-| `POLYMARKET_WS_URL` | Base WSS URL (default: `wss://ws-subscriptions-clob.polymarket.com`) |
-
----
-
-## 🔑 Generating API Keys
-
-Before running the bot, you need to generate your Polymarket API credentials.
-
-### Step 1: Set your private key
-
-Edit `.env` and add your private key:
-```env
-POLYMARKET_PRIVATE_KEY=0xYOUR_PRIVATE_KEY_HERE
-```
-
-### Step 2: Run the API key generator
+Edit `.env` and add your credentials:
 
 ```bash
-python -m src.generate_api_key
+# Example for Binance
+PROVIDER=binance
+BINANCE_API_KEY=your_api_key_here
+BINANCE_API_SECRET=your_api_secret_here
+
+# Example for Polymarket
+PROVIDER=polymarket
+POLYMARKET_PRIVATE_KEY=0x...
 ```
 
-This will output something like:
-```
-API Key: abc123...
-Secret: xyz789...
-Passphrase: mypassphrase
-```
+See provider-specific documentation for credential setup.
 
-### Step 3: Add the credentials to `.env`
+## 🚀 Usage
 
-```env
-POLYMARKET_API_KEY=abc123...
-POLYMARKET_API_SECRET=xyz789...
-POLYMARKET_API_PASSPHRASE=mypassphrase
-```
-
-> ⚠️ **Important**: The API credentials are derived from your private key. If you change the private key, you'll need to regenerate the API credentials.
-
----
-
-## � Diagnosing Configuration Issues
-
-If you get `"invalid signature"` errors, run the diagnostic tool:
+### Basic Usage
 
 ```bash
-python -m src.diagnose_config
+# Run with default configuration
+python main.py
+
+# Run with specific config
+python main.py --config .env.custom
+
+# Dry run mode (simulation)
+python main.py --dry-run
+
+# Verbose logging
+python main.py --verbose
 ```
 
-This will check:
-- Whether your `POLYMARKET_FUNDER` is correctly set (required for Magic.link accounts)
-- Whether the signer and funder addresses are different (they should be for Magic.link)
-- Whether the bot can detect `neg_risk` for BTC 15min markets
-- Your current USDC balance via the Polymarket API
-
-**Common causes of "invalid signature":**
-1. `POLYMARKET_FUNDER` is empty for Magic.link accounts
-2. `POLYMARKET_FUNDER` is set to your Polygon wallet address instead of your Polymarket proxy wallet
-3. API credentials were generated with a different private key or configuration
-4. The `neg_risk` flag is incorrectly detected (fixed in latest version - bot now forces `neg_risk=True` for BTC 15min markets)
-
-**About "Balance on-chain" showing $0:**
-This is **normal** for Magic.link accounts. Your funds are held in a Polymarket proxy contract, not directly in your Polygon wallet. The "USDC balance" via API should show your correct balance.
-
----
-
-## �💰 Checking Your Balance
-
-Before trading, verify that your wallet is configured correctly and has funds:
+### With Web Dashboard
 
 ```bash
-python -m src.test_balance
+# Terminal 1: Start web dashboard
+python -m src.web.server --port 8080
+
+# Terminal 2: Run bot
+python main.py
+
+# Browser: Open dashboard
+http://localhost:8080
 ```
 
-This will show:
-```
-======================================================================
-POLYMARKET BALANCE TEST
-======================================================================
-Host: https://clob.polymarket.com
-Signature Type: 1
-Private Key: ✓
-API Key: ✓
-API Secret: ✓
-API Passphrase: ✓
-======================================================================
+### Advanced Usage
 
-1. Creating ClobClient...
-   ✓ Client created
+```python
+from src.providers import create_provider
+from src.strategies import create_strategy
+from src.web import create_web_server
+import threading
 
-2. Deriving API credentials from private key...
-   ✓ Credentials configured
+# Start web dashboard
+web_server = create_web_server({"port": 8080})
+web_thread = threading.Thread(target=web_server.run)
+web_thread.daemon = True
+web_thread.start()
 
-3. Getting wallet address...
-   ✓ Address: 0x52e78F6071719C...
+# Create provider
+provider = create_provider("binance", {
+    "api_key": "...",
+    "api_secret": "..."
+})
 
-4. Getting USDC balance (COLLATERAL)...
-   💰 BALANCE USDC: $25.123456
+# Create strategy
+strategy = create_strategy("cross_exchange", provider, {
+    "provider_b": coinbase_provider,
+    "min_spread_pct": 0.3,
+    "order_size": 0.01
+})
 
-5. Verifying balance directly on Polygon...
-   🔗 Balance on-chain: $25.123456
+# Run strategy
+await strategy.start()
 
-======================================================================
-TEST COMPLETED
-======================================================================
-```
-
-> ⚠️ If balance shows `$0.00` but you have funds on Polymarket, check your `POLYMARKET_SIGNATURE_TYPE` and `POLYMARKET_FUNDER` settings.
-
----
-
-## 💻 Usage
-
-### Simulation mode (recommended first):
-
-Make sure `DRY_RUN=true` in `.env`, then:
-```bash
-python -m src.simple_arb_bot
+# Update dashboard
+web_server.update_stats(strategy.stats)
+web_server.add_trade(trade_data)
 ```
 
-The bot will scan for opportunities but won't place real orders.
+## 💡 Strategy Examples
 
-### Optional: WebSocket market data (lower latency)
-
-By default the bot polls the CLOB order book over HTTPS. You can optionally enable
-the Polymarket CLOB **Market WebSocket** feed to receive pushed order book updates
-and reduce per-scan latency.
-
-Set the following in your `.env`:
-
-```env
-USE_WSS=true
-POLYMARKET_WS_URL=wss://ws-subscriptions-clob.polymarket.com
-```
-
-Notes on WSS mode:
-- The Market channel can send either a single JSON object or a JSON array (batched events). The bot handles both.
-- If the connection drops or a proxy/firewall blocks WSS, the bot will reconnect and print the error reason.
-- Internally, WSS mode maintains an in-memory L2 book using `book` snapshots + `price_change` deltas.
-
-Then run the bot the same way:
+### Example 1: Cross-Exchange Arbitrage (Binance ↔ Coinbase)
 
 ```bash
-python -m src.simple_arb_bot
+STRATEGY=cross_exchange
+PROVIDER_A=binance
+PROVIDER_B=coinbase
+PAIR=BTCUSDT
+MIN_SPREAD_PCT=0.3
+ORDER_SIZE=0.01
 ```
 
-### Live trading mode:
+**Expected**: 0.3-1.5% profit per trade, 5-20 opportunities/day
 
-1. Change `DRY_RUN=false` in `.env`
-2. Ensure you have USDC in your Polymarket wallet
-3. Run:
+### Example 2: Funding Rate Arbitrage (Bybit ↔ dYdX)
+
 ```bash
-python -m src.simple_arb_bot
+STRATEGY=funding_rate
+PROVIDER_A=bybit
+PROVIDER_B=dydx
+PAIR=BTC-USD
+POSITION_SIZE=0.1
+MIN_FUNDING_DIFF_APY=20.0
 ```
 
-### Paired execution safety (avoids “one-leg fills”)
+**Expected**: 50-200% APY with delta-neutral positions
 
-In real trading, it’s possible for **only one leg** (UP or DOWN) to fill if the book moves.
-To reduce the risk of ending up with an imbalanced position, the bot now:
+### Example 3: Triangular Arbitrage (Binance)
 
-- **Submits both legs**, then **verifies** each order by polling `get_order`.
-- Only logs **“EXECUTED (BOTH LEGS FILLED)”** and increments `trades_executed` when **both** legs are confirmed filled.
-- If only one leg fills, it will **best-effort cancel** the remaining order(s) and attempt to **flatten exposure** by submitting a
-   `SELL` on the filled leg at the current `best_bid` using `FAK` (fill-and-kill).
-
-Recommendation:
-- Keep `ORDER_TYPE=FOK` for entries (fill-or-kill) to avoid leaving open orders.
-
-Important:
-- This is **risk-reduction**, not a perfect guarantee. In fast markets, unwind orders can also fail or partially fill.
-- Always monitor your positions on Polymarket, especially if you see a “Partial fill detected” warning.
-
----
-
-## 📊 Features
-
-### Core Features
-✅ **Auto-discovers** active BTC 15min market  
-✅ **Detects opportunities** when price_up + price_down < threshold  
-✅ **Execution-aware pricing**: uses order book asks (not last trade price)  
-✅ **Depth-aware sizing**: walks the ask book to ensure `ORDER_SIZE` can fill (uses a conservative "worst fill" price)  
-✅ **Continuous scanning** with no delays (maximum speed)  
-✅ **Lower latency polling**: fetches UP/DOWN order books concurrently  
-✅ **Auto-switches** to next market when current one closes  
-✅ **Final summary** with total investment, profit and market result  
-✅ **Simulation mode** for risk-free testing  
-✅ **Balance verification** before executing trades  
-✅ **Paired execution verification**: confirms both legs filled (otherwise cancels + attempts to unwind)
-
-### Enhanced Features (New) ⚡
-✅ **Statistics Tracking**: Comprehensive trade history and performance metrics  
-✅ **Risk Management**: Daily loss limits, position size limits, trade frequency controls  
-✅ **Configuration Validation**: Validates settings before startup with helpful error messages  
-✅ **Enhanced Logging**: Rich console output with colors and better formatting (optional)  
-✅ **Graceful Shutdown**: Clean shutdown with statistics saving  
-✅ **Trade History Export**: Export trade data to JSON and CSV formats  
-✅ **Performance Analytics**: Win rate, average profit, and detailed statistics  
-
----
-
-## 📈 Example Output
-
-```
-🚀 BITCOIN 15MIN ARBITRAGE BOT STARTED
-======================================================================
-Market: btc-updown-15m-1765301400
-Time remaining: 12m 34s
-Mode: 🔸 SIMULATION
-Cost threshold: $0.99
-Order size: 5 shares
-======================================================================
-
-[Scan #1] 12:34:56
-No arbitrage: UP=$0.48 + DOWN=$0.52 = $1.00 (needs < $0.99)
-
-🎯 ARBITRAGE OPPORTUNITY DETECTED
-======================================================================
-UP price (goes up):   $0.4800
-DOWN price (goes down): $0.5100
-Total cost:           $0.9900
-Profit per share:     $0.0100
-Profit %:             1.01%
-----------------------------------------------------------------------
-Order size:           5 shares each side
-Total investment:     $4.95
-Expected payout:      $5.00
-EXPECTED PROFIT:      $0.05
-======================================================================
-✅ ARBITRAGE EXECUTED SUCCESSFULLY
-
-🏁 MARKET CLOSED - FINAL SUMMARY
-======================================================================
-Market: btc-updown-15m-1765301400
-Result: UP (goes up) 📈
-Mode: 🔴 REAL TRADING
-----------------------------------------------------------------------
-Total opportunities detected:  3
-Total trades executed:         3
-Total shares bought:           30
-----------------------------------------------------------------------
-Total invested:                $14.85
-Expected payout at close:      $15.00
-Expected profit:               $0.15 (1.01%)
-----------------------------------------------------------------------
-📊 OVERALL STATISTICS:
-  Total trades:                 3
-  Win rate:                     100.0%
-  Average profit per trade:     $0.05
-  Average profit %:             1.01%
-----------------------------------------------------------------------
-⚠️ RISK MANAGEMENT:
-  Daily trades:                 3
-  Daily net P&L:                $0.15
-======================================================================
+```bash
+STRATEGY=triangular
+PROVIDER=binance
+TRIANGLE_PAIRS=BTCUSDT,ETHUSDT,ETHBTC
+MIN_PROFIT_PCT=0.1
+ORDER_SIZE=0.01
 ```
 
----
+**Expected**: 0.1-0.5% per cycle, 10-50 opportunities/day
 
-## 📁 Project Structure
+See [STRATEGIES.md](STRATEGIES.md) for all strategy examples.
 
-```
-Bot/
-├── src/
-│   ├── simple_arb_bot.py    # Main arbitrage bot
-│   ├── config.py            # Configuration loader
-│   ├── config_validator.py  # Configuration validation (NEW)
-│   ├── lookup.py            # Market ID fetcher
-│   ├── trading.py           # Order execution
-│   ├── statistics.py        # Statistics tracking (NEW)
-│   ├── risk_manager.py      # Risk management (NEW)
-│   ├── logger.py            # Enhanced logging (NEW)
-│   ├── utils.py             # Utility functions (NEW)
-│   ├── wss_market.py        # WebSocket market client
-│   ├── generate_api_key.py  # API key generator utility
-│   ├── diagnose_config.py   # Configuration diagnostic tool
-│   └── test_balance.py      # Balance verification utility
-├── tests/
-│   └── test_state.py        # Unit tests
-├── .env                     # Environment variables (create from .env.example)
-├── .env.example             # Environment template (if available)
-├── requirements.txt         # Dependencies
-├── README.md                # This file
-├── CHANGELOG.md             # Detailed changelog
-└── docs/                    # Documentation folder
-    ├── README.md            # Documentation index
-    ├── GETTING_STARTED.md   # Quick start guide
-    ├── CONFIGURATION.md     # Configuration guide
-    ├── FEATURES.md          # Features guide
-    └── TROUBLESHOOTING.md   # Troubleshooting guide
+## 🛡️ Risk Management
+
+**Built-in safeguards:**
+
+- ✅ **Stop Loss** - Automatic position exits on adverse moves
+- ✅ **Position Limits** - Maximum position size enforcement
+- ✅ **Daily Loss Caps** - Stop trading after max daily loss
+- ✅ **Trade Limits** - Maximum trades per day
+- ✅ **Balance Checks** - Minimum balance requirements
+- ✅ **Dry Run Mode** - Test strategies without real money
+- ✅ **Inventory Management** - Track positions across exchanges
+
+**Configuration:**
+```bash
+MAX_DAILY_LOSS=100.0
+MAX_TRADES_PER_DAY=50
+MIN_BALANCE_REQUIRED=100.0
+MAX_POSITION_SIZE=1000.0
+MAX_BALANCE_UTILIZATION=0.7
 ```
 
----
+## 📖 Documentation
 
-## ⚠️ Warnings
-
-- ⚠️ **DO NOT use `DRY_RUN=false` without funds** in your Polymarket wallet
-- ⚠️ **Spreads** can eliminate profit (verify liquidity)
-- ⚠️ Markets close every **15 minutes** (don't accumulate positions)
-- ⚠️ Start with **small orders** (ORDER_SIZE=5)
-- ⚠️ This software is **educational only** - use at your own risk
-- ⚠️ **Never share your private key** with anyone
-
----
-
-## 🔧 Troubleshooting
-
-### Configuration Validation
-
-The bot now validates your configuration before starting. If you see validation errors:
-- Check the error messages for specific issues
-- Verify your `.env` file format
-- Ensure all required fields are set
-- Run `python -m src.diagnose_config` for detailed diagnostics
-
-### "Invalid signature" error
-- Verify `POLYMARKET_SIGNATURE_TYPE` matches your wallet type
-- Regenerate API credentials with `python -m src.generate_api_key`
-- For Magic.link users: ensure `POLYMARKET_FUNDER` is set correctly
-- Run `python -m src.diagnose_config` for detailed diagnostics
-
-### Balance shows $0 but I have funds
-- Check that your private key corresponds to the wallet with funds
-- For Magic.link: the private key is for your EOA, not the proxy wallet
-- Run `python -m src.test_balance` to see your wallet address
-- Verify `POLYMARKET_FUNDER` is set for Magic.link accounts
-
-### "No active BTC 15min market found"
-- Markets open every 15 minutes; wait for the next one
-- Check your internet connection
-- Try visiting https://polymarket.com/crypto/15M manually
-
-### Trade blocked by risk management
-- Check your risk management settings (MAX_DAILY_LOSS, MAX_POSITION_SIZE, etc.)
-- Review the risk management stats in the final summary
-- Adjust limits if needed (set to 0 to disable)
-
-### Statistics not showing
-- Ensure `ENABLE_STATS=true` in your `.env` file
-- Check that `TRADE_LOG_FILE` is writable
-- Verify you have write permissions in the bot directory
-
----
-
-## 📚 Resources & Documentation
-
-### Core Documentation
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Multi-provider, multi-strategy architecture guide
-- **[STRATEGIES.md](STRATEGIES.md)** - Available trading strategies and how to create custom ones
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and design
+- **[STRATEGIES.md](STRATEGIES.md)** - All 11 strategies explained
+- **[WEB_DASHBOARD.md](WEB_DASHBOARD.md)** - Web interface documentation
+- **[PROVIDER_RESEARCH.md](PROVIDER_RESEARCH.md)** - Exchange research and selection
 - **[PROFILES.md](PROFILES.md)** - Capital-based trading profiles
-- **[PROFIT_ANALYSIS.md](PROFIT_ANALYSIS.md)** - Budget and profit analysis
-- **[CHANGELOG.md](CHANGELOG.md)** - Detailed changelog of all improvements
 
-### Getting Started
-- **[docs/README.md](docs/README.md)** - Documentation index and navigation
-- **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** - Quick start guide (5 minutes)
-- **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)** - Complete configuration guide
-- **[docs/FEATURES.md](docs/FEATURES.md)** - Detailed feature explanations
-- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+## 🎓 Strategy Selection Guide
 
-### External Resources
-- [Polymarket](https://polymarket.com/)
-- [BTC 15min Markets](https://polymarket.com/crypto/15M)
-- [py-clob-client documentation](https://github.com/Polymarket/py-clob-client)
+**For Beginners ($100-$500):**
+- Binary Arbitrage (Polymarket)
+- High-Probability Bond (Polymarket)
+- Cross-Exchange Arbitrage (Binance ↔ Coinbase)
 
-### Utilities
-- `python -m src.generate_api_key` - Generate API credentials
-- `python -m src.test_balance` - Verify wallet configuration and balance
-- `python -m src.diagnose_config` - Diagnose configuration issues
+**For Intermediate ($500-$2,000):**
+- Triangular Arbitrage (Binance)
+- Cross-Platform Arbitrage (Polymarket ↔ Kalshi)
+- Statistical Arbitrage (3+ exchanges)
+
+**For Advanced ($2,000-$10,000):**
+- Funding Rate Arbitrage (Bybit ↔ dYdX)
+- Basis Trading (Spot + Futures)
+- Market Making (requires large capital)
+
+**High Risk (Experienced Only):**
+- Liquidation Sniping (Bybit)
+- Momentum Trading (directional)
+
+## 🔒 Security Best Practices
+
+1. **Never share private keys or API secrets**
+2. **Use API keys with minimal permissions** (trading only, no withdrawals)
+3. **Test with small amounts first** using dry run mode
+4. **Set up IP whitelisting** on exchange APIs
+5. **Use 2FA** on all exchange accounts
+6. **Monitor positions regularly**
+7. **Keep software updated**
+
+## 📊 Performance Tracking
+
+**Built-in statistics:**
+- Total trades executed
+- Win rate percentage
+- Total profit/loss
+- Average profit per trade
+- Sharpe ratio (coming soon)
+- Maximum drawdown (coming soon)
+
+**Export trade history:**
+```bash
+# Trades saved to JSON
+TRADE_LOG_FILE=trades.json
+```
+
+## 🤝 Contributing
+
+Contributions welcome! Areas for improvement:
+- Additional exchange integrations
+- New trading strategies
+- Performance optimizations
+- Documentation improvements
+- Test coverage
+
+## ⚠️ Disclaimer
+
+**This software is for educational and research purposes.**
+
+- Trading cryptocurrencies and prediction markets involves substantial risk
+- Past performance does not guarantee future results
+- Only trade with money you can afford to lose
+- The authors are not responsible for any financial losses
+- Not financial advice - do your own research
+- Test thoroughly before using real funds
+
+## 📜 License
+
+MIT License - see LICENSE file for details
+
+## 🙏 Acknowledgments
+
+- Research data from DeFi protocols and exchange documentation
+- Community feedback and contributions
+- Open source libraries: Flask, Chart.js, py-clob-client
+
+## 📞 Support
+
+- **Documentation**: Check docs/ folder
+- **Issues**: Open GitHub issue
+- **Discussions**: GitHub discussions
 
 ---
 
+**Built with ❤️ for algorithmic traders**
 
-## 🆕 What's New?
-
-This bot has been significantly enhanced with professional features:
-
-### Latest Updates
-- **Multi-Provider Support**: Trade on Polymarket AND Luno with unified interface
-- **Multi-Strategy System**: Run different strategies in parallel or combine them
-- **Strategy Layer**: Separate trading logic from provider implementation
-- **Provider Abstraction**: Same strategy works across different exchanges
-- **WebSocket Streaming**: Real-time market data for Luno (low latency)
-
-### Previous Enhancements
-- **Statistics Tracking**: Track all trades, performance metrics, and export data
-- **Risk Management**: Configure daily limits, position sizes, and trade frequency
-- **Enhanced Logging**: Rich console output with better formatting
-- **Configuration Validation**: Catch configuration errors before trading
-- **Graceful Shutdown**: Clean shutdown with data preservation
-- **Capital-Based Profiles**: Auto-optimize parameters based on your balance
-- **Better Documentation**: Comprehensive architecture and strategy guides
-
-All new features are **optional** and the bot is **100% backward compatible**. See [CHANGELOG.md](CHANGELOG.md) for details.
-
----
-
-## 📞 Contact & Support
-
-For questions, issues, or suggestions:
-
-- **Telegram**: [@terauss](https://t.me/terauss)
-
----
-
-## ⚖️ Disclaimer
-
-This software is for educational purposes only. Trading involves risk. I am not responsible for financial losses. Always do your own research and never invest more than you can afford to lose.
-
-**Risk Management Features**: While the bot includes risk management tools, these are not guarantees against losses. Always monitor your trades and set appropriate limits based on your risk tolerance.
+Current Version: 2.0.0 (Multi-Provider + Web Dashboard)
