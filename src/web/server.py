@@ -30,6 +30,9 @@ from flask_cors import CORS
 
 from ..providers.factory import create_provider, get_supported_providers
 from ..strategies.factory import create_strategy, get_supported_strategies
+from .multi_bot_manager import MultiBotManager
+from .data_export import DataExporter
+from ..backtesting import BacktestEngine, HistoricalDataProvider
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +68,13 @@ class TradingBotWebServer:
             async_mode='threading'
         )
 
-        # Bot state
+        # Multi-bot manager
+        self.bot_manager = MultiBotManager(self.config.get("bot_manager", {}))
+
+        # Data exporter
+        self.data_exporter = DataExporter(self.config.get("data_export", {}))
+
+        # Bot state (legacy single-bot support)
         self.bot_running = False
         self.bot_paused = False
         self.current_strategy = None
@@ -213,6 +222,369 @@ class TradingBotWebServer:
         def send_static(path):
             """Serve static files."""
             return send_from_directory('static', path)
+
+        # Multi-bot management routes
+        @self.app.route('/api/bots', methods=['GET'])
+        def api_get_bots():
+            """Get all bots."""
+            return jsonify(self.bot_manager.get_all_bots())
+
+        @self.app.route('/api/bots/running', methods=['GET'])
+        def api_get_running_bots():
+            """Get running bots."""
+            return jsonify(self.bot_manager.get_running_bots())
+
+        @self.app.route('/api/bots/<bot_id>', methods=['GET'])
+        def api_get_bot(bot_id):
+            """Get specific bot."""
+            bot = self.bot_manager.get_bot(bot_id)
+            if bot:
+                return jsonify(bot)
+            return jsonify({"error": "Bot not found"}), 404
+
+        @self.app.route('/api/bots', methods=['POST'])
+        def api_create_bot():
+            """Create new bot."""
+            data = request.json or {}
+            strategy = data.get('strategy')
+            provider = data.get('provider')
+            config = data.get('config', {})
+
+            if not strategy or not provider:
+                return jsonify({"error": "strategy and provider required"}), 400
+
+            try:
+                bot_id = self.bot_manager.create_bot(strategy, provider, config)
+
+                # Emit WebSocket event
+                self.socketio.emit('bot_created', {
+                    'bot_id': bot_id,
+                    'strategy': strategy,
+                    'provider': provider,
+                    'timestamp': datetime.now().isoformat()
+                })
+
+                return jsonify({"bot_id": bot_id, "status": "created"})
+
+            except Exception as e:
+                logger.error(f"Error creating bot: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/bots/<bot_id>/start', methods=['POST'])
+        def api_start_bot(bot_id):
+            """Start specific bot."""
+            try:
+                success = self.bot_manager.start_bot(bot_id)
+
+                if success:
+                    # Emit WebSocket event
+                    self.socketio.emit('bot_started', {
+                        'bot_id': bot_id,
+                        'timestamp': datetime.now().isoformat()
+                    })
+
+                    return jsonify({"status": "started"})
+                else:
+                    return jsonify({"error": "Failed to start bot"}), 500
+
+            except Exception as e:
+                logger.error(f"Error starting bot {bot_id}: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/bots/<bot_id>/stop', methods=['POST'])
+        def api_stop_bot(bot_id):
+            """Stop specific bot."""
+            try:
+                success = self.bot_manager.stop_bot(bot_id)
+
+                if success:
+                    # Emit WebSocket event
+                    self.socketio.emit('bot_stopped', {
+                        'bot_id': bot_id,
+                        'timestamp': datetime.now().isoformat()
+                    })
+
+                    return jsonify({"status": "stopped"})
+                else:
+                    return jsonify({"error": "Failed to stop bot"}), 500
+
+            except Exception as e:
+                logger.error(f"Error stopping bot {bot_id}: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/bots/<bot_id>/pause', methods=['POST'])
+        def api_pause_bot(bot_id):
+            """Pause/resume specific bot."""
+            try:
+                success = self.bot_manager.pause_bot(bot_id)
+
+                if success:
+                    bot = self.bot_manager.get_bot(bot_id)
+                    is_paused = bot['status'] == 'paused'
+
+                    # Emit WebSocket event
+                    self.socketio.emit('bot_paused' if is_paused else 'bot_resumed', {
+                        'bot_id': bot_id,
+                        'timestamp': datetime.now().isoformat()
+                    })
+
+                    return jsonify({"status": bot['status']})
+                else:
+                    return jsonify({"error": "Failed to pause bot"}), 500
+
+            except Exception as e:
+                logger.error(f"Error pausing bot {bot_id}: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/bots/<bot_id>', methods=['DELETE'])
+        def api_remove_bot(bot_id):
+            """Remove specific bot."""
+            try:
+                success = self.bot_manager.remove_bot(bot_id)
+
+                if success:
+                    # Emit WebSocket event
+                    self.socketio.emit('bot_removed', {
+                        'bot_id': bot_id,
+                        'timestamp': datetime.now().isoformat()
+                    })
+
+                    return jsonify({"status": "removed"})
+                else:
+                    return jsonify({"error": "Failed to remove bot"}), 500
+
+            except Exception as e:
+                logger.error(f"Error removing bot {bot_id}: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/bots/stats/aggregated', methods=['GET'])
+        def api_get_aggregated_stats():
+            """Get aggregated statistics across all bots."""
+            return jsonify(self.bot_manager.get_aggregated_stats())
+
+        # Data export routes
+        @self.app.route('/api/export/trades', methods=['GET'])
+        def api_export_trades():
+            """Export trade history."""
+            format = request.args.get('format', 'csv')
+            start_date = request.args.get('start_date')
+            end_date = request.args.get('end_date')
+
+            # Parse dates
+            start = datetime.fromisoformat(start_date) if start_date else None
+            end = datetime.fromisoformat(end_date) if end_date else None
+
+            try:
+                data = self.data_exporter.export_trades(
+                    self.recent_trades,
+                    format=format,
+                    start_date=start,
+                    end_date=end
+                )
+
+                # Determine mimetype
+                if format == 'csv':
+                    mimetype = 'text/csv'
+                    filename = f'trades_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+                elif format == 'json':
+                    mimetype = 'application/json'
+                    filename = f'trades_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+                elif format == 'excel':
+                    mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    filename = f'trades_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+                else:
+                    return jsonify({"error": "Invalid format"}), 400
+
+                from flask import Response
+                return Response(
+                    data,
+                    mimetype=mimetype,
+                    headers={'Content-Disposition': f'attachment; filename={filename}'}
+                )
+
+            except Exception as e:
+                logger.error(f"Error exporting trades: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/export/stats', methods=['GET'])
+        def api_export_stats():
+            """Export performance statistics."""
+            format = request.args.get('format', 'json')
+
+            try:
+                data = self.data_exporter.export_performance_metrics(
+                    self.stats,
+                    format=format
+                )
+
+                if format == 'csv':
+                    mimetype = 'text/csv'
+                    filename = f'stats_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+                else:
+                    mimetype = 'application/json'
+                    filename = f'stats_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+
+                from flask import Response
+                return Response(
+                    data,
+                    mimetype=mimetype,
+                    headers={'Content-Disposition': f'attachment; filename={filename}'}
+                )
+
+            except Exception as e:
+                logger.error(f"Error exporting stats: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/export/chart-data', methods=['GET'])
+        def api_export_chart_data():
+            """Export chart data."""
+            format = request.args.get('format', 'csv')
+            interval = request.args.get('interval', '1h')
+
+            try:
+                # Generate chart data
+                chart_data = self.data_exporter.generate_profit_chart_data(
+                    self.recent_trades,
+                    interval=interval
+                )
+
+                # Export
+                data = self.data_exporter.export_chart_data(
+                    chart_data,
+                    format=format
+                )
+
+                if format == 'csv':
+                    mimetype = 'text/csv'
+                    filename = f'chart_data_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+                else:
+                    mimetype = 'application/json'
+                    filename = f'chart_data_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+
+                from flask import Response
+                return Response(
+                    data,
+                    mimetype=mimetype,
+                    headers={'Content-Disposition': f'attachment; filename={filename}'}
+                )
+
+            except Exception as e:
+                logger.error(f"Error exporting chart data: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/export/bots', methods=['GET'])
+        def api_export_bots():
+            """Export multi-bot summary."""
+            format = request.args.get('format', 'csv')
+
+            try:
+                bots = self.bot_manager.get_all_bots()
+                data = self.data_exporter.export_bot_summary(bots, format=format)
+
+                if format == 'csv':
+                    mimetype = 'text/csv'
+                    filename = f'bots_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+                else:
+                    mimetype = 'application/json'
+                    filename = f'bots_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+
+                from flask import Response
+                return Response(
+                    data,
+                    mimetype=mimetype,
+                    headers={'Content-Disposition': f'attachment; filename={filename}'}
+                )
+
+            except Exception as e:
+                logger.error(f"Error exporting bots: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        # Backtesting routes
+        @self.app.route('/api/backtest', methods=['POST'])
+        def api_run_backtest():
+            """Run strategy backtest."""
+            data = request.json or {}
+            strategy_name = data.get('strategy')
+            historical_data = data.get('historical_data', [])
+            config = data.get('config', {})
+
+            if not strategy_name or not historical_data:
+                return jsonify({"error": "strategy and historical_data required"}), 400
+
+            try:
+                # Parse timestamps in historical data
+                for point in historical_data:
+                    if isinstance(point.get('timestamp'), str):
+                        point['timestamp'] = datetime.fromisoformat(point['timestamp'])
+
+                # Get strategy class
+                from ..strategies import factory
+                # Create a mock provider for the strategy class lookup
+                mock_provider = HistoricalDataProvider(historical_data)
+                strategy_instance = create_strategy(strategy_name, mock_provider, config)
+                strategy_class = type(strategy_instance)
+
+                # Run backtest
+                async def run():
+                    engine = BacktestEngine(strategy_class, historical_data, config)
+                    return await engine.run()
+
+                result = asyncio.run(run())
+
+                # Emit WebSocket event
+                self.socketio.emit('backtest_completed', {
+                    'strategy': strategy_name,
+                    'result': result.to_dict(),
+                    'timestamp': datetime.now().isoformat()
+                })
+
+                return jsonify(result.to_dict())
+
+            except Exception as e:
+                logger.error(f"Error running backtest: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/backtest/optimize', methods=['POST'])
+        def api_optimize_parameters():
+            """Optimize strategy parameters."""
+            data = request.json or {}
+            strategy_name = data.get('strategy')
+            historical_data = data.get('historical_data', [])
+            param_grid = data.get('param_grid', {})
+            metric = data.get('metric', 'sharpe_ratio')
+
+            if not strategy_name or not historical_data or not param_grid:
+                return jsonify({"error": "strategy, historical_data, and param_grid required"}), 400
+
+            try:
+                # Parse timestamps
+                for point in historical_data:
+                    if isinstance(point.get('timestamp'), str):
+                        point['timestamp'] = datetime.fromisoformat(point['timestamp'])
+
+                # Get strategy class
+                mock_provider = HistoricalDataProvider(historical_data)
+                strategy_instance = create_strategy(strategy_name, mock_provider, {})
+                strategy_class = type(strategy_instance)
+
+                # Run optimization
+                from ..backtesting.engine import ParameterOptimizer
+
+                async def run():
+                    optimizer = ParameterOptimizer(strategy_class, historical_data)
+                    return await optimizer.optimize(param_grid, metric)
+
+                result = asyncio.run(run())
+
+                return jsonify({
+                    'best_params': result['best_params'],
+                    'best_score': result['best_score'],
+                    'result': result['best_result'].to_dict()
+                })
+
+            except Exception as e:
+                logger.error(f"Error optimizing parameters: {e}")
+                return jsonify({"error": str(e)}), 500
 
     def _setup_websocket_handlers(self):
         """Setup WebSocket event handlers."""
