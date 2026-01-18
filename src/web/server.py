@@ -32,6 +32,7 @@ from ..providers.factory import create_provider, get_supported_providers
 from ..strategies.factory import create_strategy, get_supported_strategies
 from .multi_bot_manager import MultiBotManager
 from .data_export import DataExporter
+from .alerts import AlertManager
 from ..backtesting import BacktestEngine, HistoricalDataProvider
 
 logger = logging.getLogger(__name__)
@@ -73,6 +74,9 @@ class TradingBotWebServer:
 
         # Data exporter
         self.data_exporter = DataExporter(self.config.get("data_export", {}))
+
+        # Alert manager
+        self.alert_manager = AlertManager(self.config.get("alerts", {}))
 
         # Bot state (legacy single-bot support)
         self.bot_running = False
@@ -584,6 +588,82 @@ class TradingBotWebServer:
 
             except Exception as e:
                 logger.error(f"Error optimizing parameters: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        # Alert routes
+        @self.app.route('/api/alerts/config', methods=['GET'])
+        def api_get_alert_config():
+            """Get alert configuration."""
+            return jsonify({
+                'email_enabled': self.alert_manager.email_enabled,
+                'sms_enabled': self.alert_manager.sms_enabled,
+                'alert_on_trade': self.alert_manager.alert_on_trade,
+                'alert_on_error': self.alert_manager.alert_on_error,
+                'alert_on_profit_threshold': self.alert_manager.alert_on_profit_threshold,
+                'alert_on_loss_threshold': self.alert_manager.alert_on_loss_threshold,
+                'max_alerts_per_hour': self.alert_manager.max_alerts_per_hour
+            })
+
+        @self.app.route('/api/alerts/config', methods=['POST'])
+        def api_update_alert_config():
+            """Update alert configuration."""
+            data = request.json or {}
+
+            try:
+                if 'alert_on_trade' in data:
+                    self.alert_manager.alert_on_trade = data['alert_on_trade']
+                if 'alert_on_error' in data:
+                    self.alert_manager.alert_on_error = data['alert_on_error']
+                if 'alert_on_profit_threshold' in data:
+                    self.alert_manager.alert_on_profit_threshold = float(data['alert_on_profit_threshold'])
+                if 'alert_on_loss_threshold' in data:
+                    self.alert_manager.alert_on_loss_threshold = float(data['alert_on_loss_threshold'])
+
+                return jsonify({"status": "updated"})
+
+            except Exception as e:
+                logger.error(f"Error updating alert config: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/alerts/test', methods=['POST'])
+        def api_test_alert():
+            """Send test alert."""
+            data = request.json or {}
+            message = data.get('message', 'Test alert from trading bot')
+
+            try:
+                success = self.alert_manager.send_custom_alert(
+                    'Test Alert',
+                    message,
+                    level='info'
+                )
+
+                if success:
+                    return jsonify({"status": "sent"})
+                else:
+                    return jsonify({"error": "Failed to send alert"}), 500
+
+            except Exception as e:
+                logger.error(f"Error sending test alert: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/alerts/history', methods=['GET'])
+        def api_get_alert_history():
+            """Get alert history."""
+            limit = request.args.get('limit', 100, type=int)
+
+            try:
+                history = self.alert_manager.get_alert_history(limit)
+
+                # Convert datetime to ISO format
+                for alert in history:
+                    if 'timestamp' in alert:
+                        alert['timestamp'] = alert['timestamp'].isoformat()
+
+                return jsonify(history)
+
+            except Exception as e:
+                logger.error(f"Error getting alert history: {e}")
                 return jsonify({"error": str(e)}), 500
 
     def _setup_websocket_handlers(self):
