@@ -1,14 +1,22 @@
 # Professional Multi-Provider Trading Bot
 
-**Advanced algorithmic trading bot** with support for **8 exchanges**, **11 proven strategies**, and a **real-time web dashboard**.
+**Advanced algorithmic trading bot** with support for **8 exchanges**, **11 proven strategies**, and a **comprehensive management platform**.
 
-> 🌐 **NEW: Web Dashboard** - Monitor and control your bot with a beautiful real-time web interface! See [WEB_DASHBOARD.md](WEB_DASHBOARD.md)
+> 🌐 **Web Dashboard** - Monitor and control with beautiful real-time interface! See [WEB_DASHBOARD.md](WEB_DASHBOARD.md)
+
+> 🤖 **Multi-Bot Management** - Run multiple strategies simultaneously on different exchanges
 
 > 🎯 **Multi-Provider Architecture** - Trade on 8 platforms: Polymarket, Luno, Kalshi, Binance, Coinbase, Bybit, Kraken, dYdX
 
 > 💎 **11 Trading Strategies** - From simple arbitrage to advanced statistical trading and funding rate capture
 
 > 📊 **Research-Backed** - All strategies based on documented market opportunities with real performance data
+
+> 🔬 **Backtesting** - Test strategies on historical data before live trading
+
+> 📧 **Alerts** - Email and SMS notifications for trades and errors
+
+> 📱 **Mobile-Responsive** - Works beautifully on all devices with dark/light themes
 
 ## 🌟 Quick Start
 
@@ -302,8 +310,53 @@ MAX_POSITION_SIZE=1000.0
 MAX_BALANCE_UTILIZATION=0.7
 ```
 
+## 🚀 Advanced Features
+
+### Multi-Bot Management
+Run multiple strategies simultaneously:
+```python
+from src.web import MultiBotManager
+
+manager = MultiBotManager()
+bot_1 = manager.create_bot("cross_exchange", "binance", {...})
+bot_2 = manager.create_bot("funding_rate", "bybit", {...})
+manager.start_bot(bot_1)
+manager.start_bot(bot_2)
+```
+
+### Backtesting
+Test strategies before live trading:
+```python
+from src.backtesting import BacktestEngine
+
+engine = BacktestEngine(strategy_class, historical_data, config)
+result = await engine.run()
+print(f"Sharpe Ratio: {result.sharpe_ratio:.2f}")
+```
+
+### Data Export
+Export trading data in multiple formats:
+```bash
+# Export trades to CSV
+curl "http://localhost:8080/api/export/trades?format=csv" > trades.csv
+
+# Export performance metrics
+curl "http://localhost:8080/api/export/stats?format=json" > stats.json
+```
+
+### Email/SMS Alerts
+Get notified about trades and errors:
+```bash
+# Configure in .env
+SMTP_HOST=smtp.gmail.com
+SMTP_USER=your_email@gmail.com
+TWILIO_ACCOUNT_SID=your_sid
+ALERT_ON_PROFIT_THRESHOLD=100.0
+```
+
 ## 📖 Documentation
 
+- **[FEATURES.md](FEATURES.md)** - Complete feature list with examples
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and design
 - **[STRATEGIES.md](STRATEGIES.md)** - All 11 strategies explained
 - **[WEB_DASHBOARD.md](WEB_DASHBOARD.md)** - Web interface documentation
@@ -348,13 +401,16 @@ MAX_BALANCE_UTILIZATION=0.7
 - Win rate percentage
 - Total profit/loss
 - Average profit per trade
-- Sharpe ratio (coming soon)
-- Maximum drawdown (coming soon)
+- Sharpe ratio (via backtesting)
+- Maximum drawdown (via backtesting)
+- Per-bot and aggregated metrics
 
 **Export trade history:**
 ```bash
-# Trades saved to JSON
-TRADE_LOG_FILE=trades.json
+# Export via API
+curl "http://localhost:8080/api/export/trades?format=csv" > trades.csv
+curl "http://localhost:8080/api/export/stats?format=json" > stats.json
+curl "http://localhost:8080/api/export/chart-data?interval=1h" > chart.csv
 ```
 
 ## 🤝 Contributing
@@ -397,4 +453,4 @@ MIT License - see LICENSE file for details
 
 **Built with ❤️ for algorithmic traders**
 
-Current Version: 2.0.0 (Multi-Provider + Web Dashboard)
+Current Version: 3.0.0 (Multi-Bot + Analytics + Alerts)
