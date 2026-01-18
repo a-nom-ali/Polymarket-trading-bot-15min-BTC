@@ -689,7 +689,7 @@ class TradingBotWebServer:
             emit('stats_update', self.stats)
 
         @self.socketio.on('request_trades')
-        def handle_request_trades(data):
+        def handle_request_trades(data=None):
             """Send recent trades to client."""
             limit = data.get('limit', 50) if data else 50
             emit('trades_update', self.recent_trades[-limit:])
