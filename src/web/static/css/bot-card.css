@@ -235,9 +235,35 @@
     border-left-color: var(--warning, #f59e0b);
 }
 
+.provider-health-item--auth_required {
+    border-left-color: var(--info, #3b82f6);
+    background: var(--bg-secondary, #1e293b);
+}
+
 .provider-health__name {
     font-weight: 600;
     color: var(--text-primary, #f1f5f9);
+}
+
+.provider-health__auth-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 8px;
+    letter-spacing: 0.5px;
+}
+
+.provider-health__auth-badge--required {
+    background: var(--info, #3b82f6);
+    color: white;
+}
+
+.provider-health__auth-badge--configured {
+    background: var(--success, #10b981);
+    color: white;
 }
 
 .provider-health__metrics {

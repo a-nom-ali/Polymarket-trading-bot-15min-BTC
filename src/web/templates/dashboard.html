@@ -898,22 +898,44 @@
         socket.on('provider_health_update', (health) => {
             const container = document.getElementById('providerHealth');
 
-            container.innerHTML = Object.entries(health).map(([name, status]) => `
-                <div class="provider-health-item provider-health-item--${status.status}">
-                    <div>
-                        <div class="provider-health__name">${name}</div>
-                        <div class="provider-health__metrics">
-                            ${status.status === 'online'
-                                ? `<span class="provider-health__latency">Ping: ${status.latency_ms}ms</span>`
-                                : `<span style="color: var(--error);">${status.error}</span>`
-                            }
+            container.innerHTML = Object.entries(health).map(([name, status]) => {
+                // Determine status icon and message
+                let statusIcon = '🔴';
+                let statusMessage = '';
+
+                if (status.status === 'online') {
+                    statusIcon = '🟢';
+                    statusMessage = `<span class="provider-health__latency">Ping: ${status.latency_ms}ms</span>`;
+                } else if (status.status === 'auth_required') {
+                    statusIcon = '🔑';
+                    statusMessage = `<span style="color: var(--info);">${status.message || 'Auth Required'}</span>`;
+                } else if (status.status === 'offline') {
+                    statusIcon = '🔴';
+                    statusMessage = `<span style="color: var(--error);">${status.error || 'Offline'}</span>`;
+                }
+
+                // Auth badge
+                const authBadge = status.auth_configured
+                    ? '<span class="provider-health__auth-badge provider-health__auth-badge--configured">✓ AUTH</span>'
+                    : '<span class="provider-health__auth-badge provider-health__auth-badge--required">AUTH REQUIRED</span>';
+
+                return `
+                    <div class="provider-health-item provider-health-item--${status.status}">
+                        <div>
+                            <div class="provider-health__name">
+                                ${name}
+                                ${authBadge}
+                            </div>
+                            <div class="provider-health__metrics">
+                                ${statusMessage}
+                            </div>
+                        </div>
+                        <div class="provider-health__status">
+                            ${statusIcon}
                         </div>
                     </div>
-                    <div class="provider-health__status">
-                        ${status.status === 'online' ? '🟢' : '🔴'}
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         });
 
         // Request bot list and provider health on connect

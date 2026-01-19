@@ -846,21 +846,51 @@ class TradingBotWebServer:
         Returns:
             Dict mapping provider names to health status
         """
+        import os
         health = {}
         providers = get_supported_providers()
 
+        # Map of provider-specific auth env vars
+        auth_env_vars = {
+            'polymarket': ['POLYMARKET_API_KEY', 'POLYMARKET_PRIVATE_KEY'],
+            'binance': ['BINANCE_API_KEY', 'BINANCE_API_SECRET'],
+            'coinbase': ['COINBASE_API_KEY', 'COINBASE_API_SECRET'],
+            'bybit': ['BYBIT_API_KEY', 'BYBIT_API_SECRET'],
+            'kraken': ['KRAKEN_API_KEY', 'KRAKEN_API_SECRET'],
+            'dydx': ['DYDX_API_KEY', 'DYDX_PRIVATE_KEY'],
+            'luno': ['LUNO_API_KEY', 'LUNO_API_SECRET'],
+            'kalshi': ['KALSHI_API_KEY', 'KALSHI_API_SECRET']
+        }
+
         for provider_name in providers.keys():
             try:
-                # Simple health check - just verify provider can be instantiated
-                # In production, you'd want to actually ping the API
-                health[provider_name] = {
-                    'status': 'online',
-                    'latency_ms': 0.0,  # TODO: Implement actual ping
-                    'last_check': datetime.now().isoformat()
-                }
+                # Check authentication status
+                required_vars = auth_env_vars.get(provider_name, [])
+                auth_configured = all(os.getenv(var) for var in required_vars) if required_vars else True
+                missing_vars = [var for var in required_vars if not os.getenv(var)]
+
+                if not auth_configured:
+                    # Authentication not configured
+                    health[provider_name] = {
+                        'status': 'auth_required',
+                        'auth_configured': False,
+                        'missing_vars': missing_vars,
+                        'message': f'Missing: {", ".join(missing_vars)}',
+                        'last_check': datetime.now().isoformat()
+                    }
+                else:
+                    # Simple health check - just verify provider can be instantiated
+                    # In production, you'd want to actually ping the API
+                    health[provider_name] = {
+                        'status': 'online',
+                        'auth_configured': True,
+                        'latency_ms': 0.0,  # TODO: Implement actual ping
+                        'last_check': datetime.now().isoformat()
+                    }
             except Exception as e:
                 health[provider_name] = {
                     'status': 'offline',
+                    'auth_configured': False,
                     'error': str(e),
                     'last_check': datetime.now().isoformat()
                 }
