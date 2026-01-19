@@ -236,22 +236,6 @@
             color: var(--error);
         }
 
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        @media (min-width: 768px) {
-            .controls {
-                flex-direction: row;
-                flex-wrap: wrap;
-                gap: 15px;
-                margin-bottom: 30px;
-            }
-        }
-
         button {
             padding: 10px 16px;
             border: none;
@@ -288,25 +272,6 @@
         button.warning {
             background: var(--warning);
             color: white;
-        }
-
-        select {
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: var(--bg-secondary);
-            color: var(--text-secondary);
-            font-size: 13px;
-            width: 100%;
-        }
-
-        @media (min-width: 768px) {
-            select {
-                padding: 12px;
-                font-size: 14px;
-                min-width: 200px;
-                width: auto;
-            }
         }
 
         .section {
@@ -527,17 +492,6 @@
             </div>
         </header>
 
-        <div class="controls">
-            <select id="providerSelect">
-                <option value="">Select Provider...</option>
-            </select>
-            <select id="strategySelect">
-                <option value="">Select Strategy...</option>
-            </select>
-            <button class="primary" onclick="createBotFromControls()">+ Create Bot</button>
-            <button class="secondary" onclick="showBotConfigModal()" title="Advanced bot configuration">⚙️ Advanced</button>
-        </div>
-
         <!-- Bot Grid Section -->
         <div class="section">
             <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -728,81 +682,6 @@
             });
         }
 
-        // Load providers and strategies
-        async function loadOptions() {
-            try {
-                const [providers, strategies] = await Promise.all([
-                    fetch('/api/providers').then(r => r.json()),
-                    fetch('/api/strategies').then(r => r.json())
-                ]);
-
-                const providerSelect = document.getElementById('providerSelect');
-                Object.entries(providers).forEach(([key, desc]) => {
-                    const option = document.createElement('option');
-                    option.value = key;
-                    option.textContent = `${key} - ${desc}`;
-                    providerSelect.appendChild(option);
-                });
-
-                const strategySelect = document.getElementById('strategySelect');
-                Object.entries(strategies).forEach(([key, desc]) => {
-                    const option = document.createElement('option');
-                    option.value = key;
-                    option.textContent = `${key} - ${desc}`;
-                    strategySelect.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Error loading options:', error);
-            }
-        }
-
-        // Bot controls
-        async function startBot() {
-            const provider = document.getElementById('providerSelect').value;
-            const strategy = document.getElementById('strategySelect').value;
-
-            if (!provider || !strategy) {
-                showNotification('Please select provider and strategy', 'warning');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ provider, strategy })
-                });
-
-                if (response.ok) {
-                    showNotification('Bot started successfully', 'success');
-                }
-            } catch (error) {
-                showNotification('Error starting bot: ' + error.message, 'error');
-            }
-        }
-
-        async function stopBot() {
-            try {
-                const response = await fetch('/api/stop', { method: 'POST' });
-                if (response.ok) {
-                    showNotification('Bot stopped', 'info');
-                }
-            } catch (error) {
-                showNotification('Error stopping bot: ' + error.message, 'error');
-            }
-        }
-
-        async function pauseBot() {
-            try {
-                const response = await fetch('/api/pause', { method: 'POST' });
-                if (response.ok) {
-                    const data = await response.json();
-                    showNotification(data.paused ? 'Bot paused' : 'Bot resumed', 'info');
-                }
-            } catch (error) {
-                showNotification('Error pausing bot: ' + error.message, 'error');
-            }
-        }
 
         // Update stats
         function updateStats(stats) {
@@ -1070,27 +949,9 @@
         });
 
         // Bot control functions
-        function createBotFromControls() {
-            const provider = document.getElementById('providerSelect').value;
-            const strategy = document.getElementById('strategySelect').value;
-
-            if (!provider || !strategy) {
-                showNotification('Please select both provider and strategy', 'warning');
-                return;
-            }
-
-            // Show modal with pre-selected provider and strategy
-            botConfigModal.show(provider, strategy);
-        }
-
-        function showBotConfigModal() {
-            // Show modal without pre-selection
-            botConfigModal.show();
-        }
-
         function createBot() {
-            // Called from bot grid "Create Bot" button
-            showBotConfigModal();
+            // Open bot configuration modal
+            botConfigModal.show();
         }
 
         function pauseBot(botId) {
@@ -1157,7 +1018,6 @@
             }
 
             initChart();
-            loadOptions();
             loadActiveProfile();
 
             // Initialize Phase 3 components
