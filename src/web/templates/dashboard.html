@@ -533,9 +533,8 @@
             <select id="strategySelect">
                 <option value="">Select Strategy...</option>
             </select>
-            <button class="primary" onclick="startBot()">▶ Start</button>
-            <button class="warning" onclick="pauseBot()">⏸ Pause</button>
-            <button class="danger" onclick="stopBot()">⏹ Stop</button>
+            <button class="primary" onclick="createBotFromControls()">+ Create Bot</button>
+            <button class="secondary" onclick="showBotConfigModal()" title="Advanced bot configuration">⚙️ Advanced</button>
         </div>
 
         <!-- Bot Grid Section -->
@@ -987,17 +986,39 @@
         });
 
         // Bot control functions
+        function createBotFromControls() {
+            const provider = document.getElementById('providerSelect').value;
+            const strategy = document.getElementById('strategySelect').value;
+
+            if (!provider || !strategy) {
+                showNotification('Please select both provider and strategy', 'warning');
+                return;
+            }
+
+            // Show modal with pre-selected provider and strategy
+            botConfigModal.show(provider, strategy);
+        }
+
+        function showBotConfigModal() {
+            // Show modal without pre-selection
+            botConfigModal.show();
+        }
+
         function createBot() {
-            alert('Create bot modal not implemented yet. Use API to create bots.');
+            // Called from bot grid "Create Bot" button
+            showBotConfigModal();
         }
 
         function pauseBot(botId) {
             fetch(`/api/bots/${botId}/pause`, { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Bot paused:', data);
+                    showNotification(`Bot ${data.status}`, 'success');
                 })
-                .catch(error => console.error('Error pausing bot:', error));
+                .catch(error => {
+                    console.error('Error pausing bot:', error);
+                    showNotification('Error pausing bot', 'error');
+                });
         }
 
         function stopBot(botId) {
@@ -1005,14 +1026,18 @@
                 fetch(`/api/bots/${botId}/stop`, { method: 'POST' })
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Bot stopped:', data);
+                        showNotification('Bot stopped', 'success');
                     })
-                    .catch(error => console.error('Error stopping bot:', error));
+                    .catch(error => {
+                        console.error('Error stopping bot:', error);
+                        showNotification('Error stopping bot', 'error');
+                    });
             }
         }
 
         function configBot(botId) {
-            alert('Bot configuration modal not implemented yet.');
+            showNotification('Bot configuration editor coming soon!', 'info');
+            // TODO: Implement bot config editor
         }
 
         // Load active profile name
@@ -1050,5 +1075,6 @@
     </script>
     <script src="/static/js/components/bot-card.js"></script>
     <script src="/static/js/components/profile-modal.js"></script>
+    <script src="/static/js/components/bot-config-modal.js"></script>
 </body>
 </html>
