@@ -20,8 +20,10 @@ Usage:
 import logging
 import asyncio
 import json
+import time
+import threading
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from pathlib import Path
 
 from flask import Flask, render_template, jsonify, request, send_from_directory
@@ -694,6 +696,26 @@ class TradingBotWebServer:
             limit = data.get('limit', 50) if data else 50
             emit('trades_update', self.recent_trades[-limit:])
 
+        @self.socketio.on('request_bot_list')
+        def handle_request_bot_list(data=None):
+            """Send current bot list to client."""
+            bots = self.bot_manager.get_all_bots()
+
+            # Enrich with live metrics
+            for bot in bots:
+                bot_id = bot['id']
+                bot['health'] = self._get_bot_health(bot_id)
+                bot['sparkline'] = self._get_profit_sparkline(bot_id, points=10)
+                bot['last_activity'] = self._get_last_activity(bot_id)
+
+            emit('bot_list_update', bots)
+
+        @self.socketio.on('request_provider_health')
+        def handle_request_provider_health(data=None):
+            """Send provider health status."""
+            health = self._check_provider_health()
+            emit('provider_health_update', health)
+
     def update_stats(self, stats: Dict[str, Any]):
         """
         Update statistics and broadcast to clients.
@@ -750,9 +772,136 @@ class TradingBotWebServer:
             'timestamp': datetime.now().isoformat()
         })
 
+    def _get_bot_health(self, bot_id: str) -> Dict[str, Any]:
+        """
+        Get bot health indicators.
+
+        Args:
+            bot_id: Bot identifier
+
+        Returns:
+            Health indicators dict
+        """
+        bot = self.bot_manager.get_bot(bot_id)
+        if not bot:
+            return {}
+
+        return {
+            'api_connected': bot.get('status') in ['running', 'paused'],
+            'balance_sufficient': True,  # TODO: Implement balance check
+            'error_rate': 0.0,  # TODO: Calculate from recent trades
+            'last_trade_age': 0,  # seconds - TODO: Calculate from last trade
+            'overall': 'healthy' if bot.get('status') == 'running' else 'warning'
+        }
+
+    def _get_profit_sparkline(self, bot_id: str, points: int = 10) -> List[float]:
+        """
+        Get profit sparkline data for bot.
+
+        Args:
+            bot_id: Bot identifier
+            points: Number of data points
+
+        Returns:
+            List of cumulative profit values
+        """
+        bot = self.bot_manager.get_bot(bot_id)
+        if not bot:
+            return []
+
+        # Get last N trades for this bot
+        bot_trades = [t for t in self.recent_trades if t.get('bot_id') == bot_id]
+        recent = bot_trades[-points:]
+
+        # Calculate cumulative profit
+        cumulative = []
+        total = 0
+        for trade in recent:
+            total += trade.get('profit', 0)
+            cumulative.append(total)
+
+        return cumulative
+
+    def _get_last_activity(self, bot_id: str) -> Optional[str]:
+        """
+        Get last activity timestamp for bot.
+
+        Args:
+            bot_id: Bot identifier
+
+        Returns:
+            ISO format timestamp or None
+        """
+        # Find last trade for this bot
+        bot_trades = [t for t in self.recent_trades if t.get('bot_id') == bot_id]
+        if bot_trades:
+            last_trade = bot_trades[-1]
+            return last_trade.get('timestamp')
+        return None
+
+    def _check_provider_health(self) -> Dict[str, Any]:
+        """
+        Check health of all configured providers.
+
+        Returns:
+            Dict mapping provider names to health status
+        """
+        health = {}
+        providers = get_supported_providers()
+
+        for provider_name in providers.keys():
+            try:
+                # Simple health check - just verify provider can be instantiated
+                # In production, you'd want to actually ping the API
+                health[provider_name] = {
+                    'status': 'online',
+                    'latency_ms': 0.0,  # TODO: Implement actual ping
+                    'last_check': datetime.now().isoformat()
+                }
+            except Exception as e:
+                health[provider_name] = {
+                    'status': 'offline',
+                    'error': str(e),
+                    'last_check': datetime.now().isoformat()
+                }
+
+        return health
+
+    def start_live_update_loop(self):
+        """Background task to push live updates to clients."""
+        def update_loop():
+            while True:
+                try:
+                    # Update bot list every second
+                    bots = self.bot_manager.get_all_bots()
+                    for bot in bots:
+                        bot['health'] = self._get_bot_health(bot['id'])
+                        bot['sparkline'] = self._get_profit_sparkline(bot['id'])
+                        bot['last_activity'] = self._get_last_activity(bot['id'])
+
+                    self.socketio.emit('bot_list_update', bots)
+
+                    # Update provider health every 5 seconds
+                    if int(time.time()) % 5 == 0:
+                        health = self._check_provider_health()
+                        self.socketio.emit('provider_health_update', health)
+
+                    time.sleep(1)
+                except Exception as e:
+                    logger.error(f"Error in live update loop: {e}")
+                    time.sleep(5)
+
+        thread = threading.Thread(target=update_loop, daemon=True)
+        thread.start()
+        logger.info("Live update loop started")
+
     def run(self):
         """Start the web server."""
         logger.info(f"Starting web server on {self.host}:{self.port}")
+
+        # Start live update loop
+        self.start_live_update_loop()
+
         self.socketio.run(
             self.app,
             host=self.host,

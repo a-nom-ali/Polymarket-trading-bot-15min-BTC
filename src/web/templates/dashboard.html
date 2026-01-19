@@ -6,6 +6,7 @@
     <title>Trading Bot Dashboard</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/static/css/bot-card.css">
     <style>
         :root {
             --bg-primary: #0f172a;
@@ -513,6 +514,32 @@
             <button class="danger" onclick="stopBot()">⏹ Stop</button>
         </div>
 
+        <!-- Bot Grid Section -->
+        <div class="section">
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>🤖 Active Bots</h2>
+                <button class="btn primary" onclick="createBot()" style="padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; background: var(--success); color: white; font-weight: 600;">+ New Bot</button>
+            </div>
+
+            <div id="botGrid" class="bot-grid">
+                <!-- Bot cards will be dynamically inserted here -->
+                <div class="bot-grid__empty">
+                    <p>No bots running. Create your first bot to get started!</p>
+                    <button class="btn primary" onclick="createBot()" style="margin-top: 10px; padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; background: var(--success); color: white; font-weight: 600;">+ Create Bot</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Provider Health Panel -->
+        <div class="section">
+            <h2>📡 Provider Status</h2>
+            <div class="card">
+                <div id="providerHealth" class="provider-health-grid">
+                    <!-- Provider health items will be inserted here -->
+                </div>
+            </div>
+        </div>
+
         <div class="grid">
             <div class="card">
                 <h2>Total Trades</h2>
@@ -827,6 +854,113 @@
             }
         }
 
+        // Bot management
+        let botCards = new Map();
+
+        socket.on('bot_list_update', (bots) => {
+            const botGrid = document.getElementById('botGrid');
+            const empty = botGrid.querySelector('.bot-grid__empty');
+
+            if (bots.length === 0) {
+                if (!empty) {
+                    botGrid.innerHTML = `
+                        <div class="bot-grid__empty">
+                            <p>No bots running. Create your first bot to get started!</p>
+                            <button class="btn primary" onclick="createBot()" style="margin-top: 10px; padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; background: var(--success); color: white; font-weight: 600;">+ Create Bot</button>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            // Remove empty state
+            if (empty) empty.remove();
+
+            // Update or create bot cards
+            bots.forEach(bot => {
+                if (botCards.has(bot.id)) {
+                    botCards.get(bot.id).update(bot);
+                } else {
+                    const card = new BotCard(bot, botGrid);
+                    botCards.set(bot.id, card);
+                }
+            });
+
+            // Remove cards for deleted bots
+            botCards.forEach((card, botId) => {
+                if (!bots.find(b => b.id === botId)) {
+                    document.querySelector(`[data-bot-id="${botId}"]`)?.remove();
+                    botCards.delete(botId);
+                }
+            });
+        });
+
+        socket.on('provider_health_update', (health) => {
+            const container = document.getElementById('providerHealth');
+
+            container.innerHTML = Object.entries(health).map(([name, status]) => `
+                <div class="provider-health-item provider-health-item--${status.status}">
+                    <div>
+                        <div class="provider-health__name">${name}</div>
+                        <div class="provider-health__metrics">
+                            ${status.status === 'online'
+                                ? `<span class="provider-health__latency">Ping: ${status.latency_ms}ms</span>`
+                                : `<span style="color: var(--error);">${status.error}</span>`
+                            }
+                        </div>
+                    </div>
+                    <div class="provider-health__status">
+                        ${status.status === 'online' ? '🟢' : '🔴'}
+                    </div>
+                </div>
+            `).join('');
+        });
+
+        // Request bot list and provider health on connect
+        socket.on('connected', () => {
+            socket.emit('request_bot_list');
+            socket.emit('request_provider_health');
+
+            // Poll for updates every second
+            setInterval(() => {
+                socket.emit('request_bot_list');
+            }, 1000);
+
+            // Poll provider health every 5 seconds
+            setInterval(() => {
+                socket.emit('request_provider_health');
+            }, 5000);
+        });
+
+        // Bot control functions
+        function createBot() {
+            alert('Create bot modal not implemented yet. Use API to create bots.');
+        }
+
+        function pauseBot(botId) {
+            fetch(`/api/bots/${botId}/pause`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Bot paused:', data);
+                })
+                .catch(error => console.error('Error pausing bot:', error));
+        }
+
+        function stopBot(botId) {
+            if (confirm('Are you sure you want to stop this bot?')) {
+                fetch(`/api/bots/${botId}/stop`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Bot stopped:', data);
+                    })
+                    .catch(error => console.error('Error stopping bot:', error));
+            }
+        }
+
+        function configBot(botId) {
+            alert('Bot configuration modal not implemented yet.');
+        }
+
         // Initialize
         window.onload = () => {
             // Load saved theme
@@ -840,5 +974,6 @@
             loadOptions();
         };
     </script>
+    <script src="/static/js/components/bot-card.js"></script>
 </body>
 </html>
