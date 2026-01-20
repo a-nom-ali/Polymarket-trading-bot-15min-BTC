@@ -224,13 +224,6 @@ class PerformanceChart {
     }
 }
 
-// Global instance
-let performanceChart = null;
-
-function initPerformanceChart() {
-    if (performanceChart) {
-        performanceChart.destroy();
-    }
-    performanceChart = new PerformanceChart('performanceChart');
-    performanceChart.init();
-}
+// Note: Global instance is created in dashboard.html
+// Keeping this commented to avoid conflicts
+// let performanceChart = null;

@@ -15,7 +15,7 @@ class StrategyBuilder {
         this.connections = [];
         this.selectedBlock = null;
         this.draggedBlock = null;
-        this.offset = { x, y: 0 };
+        this.offset = { x: 0, y: 0 };
         this.connectionStart = null; // For drawing connections
         this.isDraggingBlock = false;
         this.tempConnection = null; // Temporary connection while dragging

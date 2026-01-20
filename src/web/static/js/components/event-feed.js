@@ -156,5 +156,6 @@ class EventFeed {
     }
 }
 
-// Global instance
-const eventFeed = new EventFeed('eventFeedContainer');
+// Note: Global instance is created in dashboard.html
+// Keeping this commented to avoid conflicts
+// const eventFeed = new EventFeed('eventFeedContainer');
