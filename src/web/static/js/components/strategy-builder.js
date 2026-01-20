@@ -20,6 +20,11 @@ class StrategyBuilder {
         this.isDraggingBlock = false;
         this.tempConnection = null; // Temporary connection while dragging
 
+        // History system for undo/redo
+        this.history = [];
+        this.historyIndex = -1;
+        this.maxHistorySize = 50;
+
         // Block types library
         this.blockLibrary = {
             triggers: [
@@ -68,8 +73,16 @@ class StrategyBuilder {
                         <button class="toolbar__btn" onclick="strategyBuilder.loadTemplate()" title="Load Template">
                             📋 Templates
                         </button>
-                        <button class="toolbar__btn" onclick="strategyBuilder.save()" title="Save Strategy">
+                        <button class="toolbar__btn" onclick="strategyBuilder.save()" title="Save Strategy (Ctrl+S)">
                             💾 Save
+                        </button>
+                    </div>
+                    <div class="toolbar__section">
+                        <button class="toolbar__btn" onclick="strategyBuilder.undo()" title="Undo (Ctrl+Z)">
+                            ↶ Undo
+                        </button>
+                        <button class="toolbar__btn" onclick="strategyBuilder.redo()" title="Redo (Ctrl+Y)">
+                            ↷ Redo
                         </button>
                     </div>
                     <div class="toolbar__section">
@@ -223,6 +236,10 @@ class StrategyBuilder {
         this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+        this.canvas.addEventListener('contextmenu', (e) => this.handleContextMenu(e));
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => this.handleKeyboard(e));
 
         // Window resize
         window.addEventListener('resize', () => this.setupCanvas());
@@ -278,6 +295,7 @@ class StrategyBuilder {
         };
 
         this.blocks.push(block);
+        this.saveState();
         this.redraw();
 
         showNotification(`Added ${block.name}`, 'success');
@@ -349,8 +367,9 @@ class StrategyBuilder {
             return;
         }
 
-        // Stop dragging
+        // Stop dragging and save state if block was moved
         if (this.isDraggingBlock) {
+            this.saveState();
             this.isDraggingBlock = false;
             this.draggedBlock = null;
         }
@@ -374,6 +393,51 @@ class StrategyBuilder {
             this.selectBlock(clickedBlock);
         } else {
             this.deselectBlock();
+        }
+    }
+
+    handleContextMenu(e) {
+        e.preventDefault();
+
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Check if right-clicked on a connection
+        const clickedConnection = this.getConnectionAt(x, y);
+        if (clickedConnection) {
+            if (confirm('Delete this connection?')) {
+                this.deleteConnection(clickedConnection);
+            }
+        }
+    }
+
+    handleKeyboard(e) {
+        // Only handle keyboard shortcuts when builder is active
+        if (!this.canvas || document.activeElement.tagName === 'INPUT') return;
+
+        // Ctrl+Z or Cmd+Z - Undo
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            this.undo();
+        }
+
+        // Ctrl+Y or Cmd+Shift+Z - Redo
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+            e.preventDefault();
+            this.redo();
+        }
+
+        // Delete or Backspace - Delete selected block
+        if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedBlock) {
+            e.preventDefault();
+            this.deleteBlock(this.selectedBlock.id);
+        }
+
+        // Ctrl+S or Cmd+S - Save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            this.save();
         }
     }
 
@@ -453,6 +517,7 @@ class StrategyBuilder {
         if (fromBlock) fromBlock.outputs[from.index].connected = true;
         if (toBlock) toBlock.inputs[to.index].connected = true;
 
+        this.saveState();
         showNotification('Connection created', 'success');
     }
 
@@ -529,6 +594,7 @@ class StrategyBuilder {
         );
 
         this.deselectBlock();
+        this.saveState();
         this.redraw();
 
         showNotification('Block deleted', 'info');
@@ -667,12 +733,118 @@ class StrategyBuilder {
         ctx.setLineDash([]);
     }
 
+    getConnectionAt(x, y) {
+        const threshold = 10; // Click detection threshold
+
+        for (const conn of this.connections) {
+            // Sample points along the Bezier curve
+            for (let t = 0; t <= 1; t += 0.05) {
+                const cp1x = conn.from.x + 50;
+                const cp1y = conn.from.y;
+                const cp2x = conn.to.x - 50;
+                const cp2y = conn.to.y;
+
+                // Cubic Bezier formula
+                const px = Math.pow(1 - t, 3) * conn.from.x +
+                          3 * Math.pow(1 - t, 2) * t * cp1x +
+                          3 * (1 - t) * Math.pow(t, 2) * cp2x +
+                          Math.pow(t, 3) * conn.to.x;
+
+                const py = Math.pow(1 - t, 3) * conn.from.y +
+                          3 * Math.pow(1 - t, 2) * t * cp1y +
+                          3 * (1 - t) * Math.pow(t, 2) * cp2y +
+                          Math.pow(t, 3) * conn.to.y;
+
+                const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
+                if (dist <= threshold) {
+                    return conn;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    deleteConnection(conn) {
+        this.connections = this.connections.filter(c => c !== conn);
+
+        // Update port connection status
+        const fromBlock = this.blocks.find(b => b.id === conn.from.blockId);
+        const toBlock = this.blocks.find(b => b.id === conn.to.blockId);
+
+        if (fromBlock && fromBlock.outputs[conn.from.index]) {
+            fromBlock.outputs[conn.from.index].connected = false;
+        }
+        if (toBlock && toBlock.inputs[conn.to.index]) {
+            toBlock.inputs[conn.to.index].connected = false;
+        }
+
+        this.saveState();
+        this.redraw();
+        showNotification('Connection deleted', 'info');
+    }
+
+    // History Management
+    saveState() {
+        // Deep copy current state
+        const state = {
+            blocks: JSON.parse(JSON.stringify(this.blocks)),
+            connections: JSON.parse(JSON.stringify(this.connections))
+        };
+
+        // Remove future history if we're not at the end
+        if (this.historyIndex < this.history.length - 1) {
+            this.history = this.history.slice(0, this.historyIndex + 1);
+        }
+
+        // Add new state
+        this.history.push(state);
+
+        // Limit history size
+        if (this.history.length > this.maxHistorySize) {
+            this.history.shift();
+        } else {
+            this.historyIndex++;
+        }
+    }
+
+    undo() {
+        if (this.historyIndex <= 0) {
+            showNotification('Nothing to undo', 'info');
+            return;
+        }
+
+        this.historyIndex--;
+        this.restoreState(this.history[this.historyIndex]);
+        showNotification('Undo', 'info');
+    }
+
+    redo() {
+        if (this.historyIndex >= this.history.length - 1) {
+            showNotification('Nothing to redo', 'info');
+            return;
+        }
+
+        this.historyIndex++;
+        this.restoreState(this.history[this.historyIndex]);
+        showNotification('Redo', 'info');
+    }
+
+    restoreState(state) {
+        this.blocks = JSON.parse(JSON.stringify(state.blocks));
+        this.connections = JSON.parse(JSON.stringify(state.connections));
+        this.deselectBlock();
+        this.redraw();
+    }
+
     // Toolbar actions
     newStrategy() {
         if (this.blocks.length > 0 && !confirm('Clear current strategy?')) return;
 
         this.blocks = [];
         this.connections = [];
+        this.history = [];
+        this.historyIndex = -1;
         this.deselectBlock();
         this.redraw();
 
@@ -804,6 +976,7 @@ class StrategyBuilder {
         // Close template modal
         document.querySelector('.template-modal')?.remove();
 
+        this.saveState();
         this.redraw();
         showNotification(`Loaded template: ${template.name}`, 'success');
     }
