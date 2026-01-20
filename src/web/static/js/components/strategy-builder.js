@@ -15,7 +15,7 @@ class StrategyBuilder {
         this.connections = [];
         this.selectedBlock = null;
         this.draggedBlock = null;
-        this.offset = { x: 0, y: 0 };
+        this.offset = { x, y: 0 };
         this.connectionStart = null; // For drawing connections
         this.isDraggingBlock = false;
         this.tempConnection = null; // Temporary connection while dragging
@@ -25,19 +25,28 @@ class StrategyBuilder {
         this.historyIndex = -1;
         this.maxHistorySize = 50;
 
+        // Data flow visualization
+        this.activeNodes = new Set(); // Nodes currently executing
+        this.dataFlowParticles = []; // Animated particles showing data flow
+
         // Block types library
         this.blockLibrary = {
             triggers: [
                 { id: 'price_cross', name: 'Price Cross', icon: '📈', inputs: ['price', 'threshold'], outputs: ['signal'] },
                 { id: 'volume_spike', name: 'Volume Spike', icon: '📊', inputs: ['volume', 'multiplier'], outputs: ['signal'] },
                 { id: 'time_trigger', name: 'Time Trigger', icon: '⏰', inputs: ['schedule'], outputs: ['signal'] },
-                { id: 'rsi_signal', name: 'RSI Signal', icon: '📉', inputs: ['period', 'overbought', 'oversold'], outputs: ['signal'] }
+                { id: 'rsi_signal', name: 'RSI Signal', icon: '📉', inputs: ['period', 'overbought', 'oversold'], outputs: ['signal'] },
+                { id: 'webhook', name: 'Webhook', icon: '🌐', inputs: ['url'], outputs: ['data'] },
+                { id: 'event_listener', name: 'Event Listener', icon: '👂', inputs: ['event_type'], outputs: ['event'] },
+                { id: 'manual_trigger', name: 'Manual Trigger', icon: '👆', inputs: [], outputs: ['trigger'] }
             ],
             conditions: [
                 { id: 'and', name: 'AND Gate', icon: '&', inputs: ['input1', 'input2'], outputs: ['output'] },
                 { id: 'or', name: 'OR Gate', icon: '|', inputs: ['input1', 'input2'], outputs: ['output'] },
                 { id: 'compare', name: 'Compare', icon: '=', inputs: ['value1', 'operator', 'value2'], outputs: ['result'] },
-                { id: 'threshold', name: 'Threshold', icon: '🎚', inputs: ['value', 'min', 'max'], outputs: ['pass'] }
+                { id: 'threshold', name: 'Threshold', icon: '🎚', inputs: ['value', 'min', 'max'], outputs: ['pass'] },
+                { id: 'if', name: 'If/Else', icon: '🔀', inputs: ['condition'], outputs: ['true', 'false'] },
+                { id: 'switch', name: 'Switch', icon: '🔁', inputs: ['value'], outputs: ['case1', 'case2', 'case3', 'default'] }
             ],
             actions: [
                 { id: 'buy', name: 'Buy Order', icon: '💰', inputs: ['signal', 'amount'], outputs: ['order'] },
@@ -83,6 +92,14 @@ class StrategyBuilder {
                         </button>
                         <button class="toolbar__btn" onclick="strategyBuilder.redo()" title="Redo (Ctrl+Y)">
                             ↷ Redo
+                        </button>
+                    </div>
+                    <div class="toolbar__section">
+                        <button class="toolbar__btn" onclick="strategyBuilder.runWorkflow()" title="Run Workflow (Test)">
+                            ▶️ Run
+                        </button>
+                        <button class="toolbar__btn" onclick="strategyBuilder.stopWorkflow()" title="Stop Execution">
+                            ⏹️ Stop
                         </button>
                     </div>
                     <div class="toolbar__section">
@@ -618,8 +635,72 @@ class StrategyBuilder {
             this.drawConnection(this.tempConnection, true);
         }
 
+        // Draw data flow particles
+        this.drawDataFlowParticles();
+
         // Draw blocks
         this.blocks.forEach(block => this.drawBlock(block));
+    }
+
+    drawDataFlowParticles() {
+        // Update and draw particles
+        this.dataFlowParticles = this.dataFlowParticles.filter(particle => {
+            particle.progress += particle.speed;
+
+            if (particle.progress >= 1) {
+                return false; // Remove completed particles
+            }
+
+            // Calculate position along Bezier curve
+            const t = particle.progress;
+            const conn = particle.connection;
+
+            const cp1x = conn.from.x + 50;
+            const cp1y = conn.from.y;
+            const cp2x = conn.to.x - 50;
+            const cp2y = conn.to.y;
+
+            const x = Math.pow(1 - t, 3) * conn.from.x +
+                     3 * Math.pow(1 - t, 2) * t * cp1x +
+                     3 * (1 - t) * Math.pow(t, 2) * cp2x +
+                     Math.pow(t, 3) * conn.to.x;
+
+            const y = Math.pow(1 - t, 3) * conn.from.y +
+                     3 * Math.pow(1 - t, 2) * t * cp1y +
+                     3 * (1 - t) * Math.pow(t, 2) * cp2y +
+                     Math.pow(t, 3) * conn.to.y;
+
+            // Draw particle
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            this.ctx.fillStyle = particle.color;
+            this.ctx.fill();
+
+            // Glow effect
+            this.ctx.shadowColor = particle.color;
+            this.ctx.shadowBlur = 10;
+            this.ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.shadowBlur = 0;
+
+            return true; // Keep particle
+        });
+
+        // Request next frame if there are active particles
+        if (this.dataFlowParticles.length > 0) {
+            requestAnimationFrame(() => this.redraw());
+        }
+    }
+
+    addDataFlowParticle(connection, color = '#10b981') {
+        this.dataFlowParticles.push({
+            connection: connection,
+            progress: 0,
+            speed: 0.02, // 2% per frame
+            color: color
+        });
+
+        this.redraw();
     }
 
     updateConnectionPositions() {
@@ -643,20 +724,24 @@ class StrategyBuilder {
     drawBlock(block) {
         const ctx = this.ctx;
         const isSelected = this.selectedBlock && this.selectedBlock.id === block.id;
+        const isActive = this.activeNodes.has(block.id);
 
         // Block shadow
         if (isSelected) {
             ctx.shadowColor = 'rgba(59, 130, 246, 0.5)';
             ctx.shadowBlur = 10;
+        } else if (isActive) {
+            ctx.shadowColor = 'rgba(16, 185, 129, 0.8)';
+            ctx.shadowBlur = 15;
         }
 
         // Block background
-        ctx.fillStyle = isSelected ? '#1e40af' : '#334155';
+        ctx.fillStyle = isActive ? '#065f46' : (isSelected ? '#1e40af' : '#334155');
         ctx.fillRect(block.x, block.y, block.width, block.height);
 
         // Block border
-        ctx.strokeStyle = isSelected ? '#3b82f6' : '#475569';
-        ctx.lineWidth = isSelected ? 3 : 2;
+        ctx.strokeStyle = isActive ? '#10b981' : (isSelected ? '#3b82f6' : '#475569');
+        ctx.lineWidth = isActive ? 3 : (isSelected ? 3 : 2);
         ctx.strokeRect(block.x, block.y, block.width, block.height);
 
         ctx.shadowBlur = 0;
@@ -1063,6 +1148,124 @@ class StrategyBuilder {
 
     clearCanvas() {
         this.newStrategy();
+    }
+
+    // ============================================================================
+    // WORKFLOW EXECUTION
+    // ============================================================================
+
+    async runWorkflow() {
+        if (!this.validate()) return;
+
+        showNotification('🚀 Running workflow...', 'info');
+
+        // Clear previous visualization
+        this.activeNodes.clear();
+        this.dataFlowParticles = [];
+
+        // Create workflow object
+        const workflow = {
+            blocks: this.blocks,
+            connections: this.connections,
+            visualizer: this // Pass visualizer for callbacks
+        };
+
+        // Mock trigger data (in real implementation, this would come from market data)
+        const triggerData = {
+            price: 50000,
+            previousPrice: 49500,
+            volume: 1500,
+            avgVolume: 1000,
+            rsi: 35,
+            timestamp: Date.now()
+        };
+
+        try {
+            // Execute workflow
+            if (typeof workflowExecutor === 'undefined') {
+                throw new Error('Workflow executor not loaded. Please refresh the page.');
+            }
+
+            const execution = await workflowExecutor.execute(workflow, triggerData);
+
+            if (execution.status === 'completed') {
+                showNotification(`✅ Workflow completed in ${execution.duration}ms`, 'success');
+                this.showExecutionResults(execution);
+            } else {
+                showNotification(`❌ Workflow failed: ${execution.error}`, 'error');
+            }
+
+        } catch (error) {
+            console.error('Workflow execution error:', error);
+            showNotification(`❌ Execution error: ${error.message}`, 'error');
+        } finally {
+            // Clear active node highlights after execution
+            setTimeout(() => {
+                this.activeNodes.clear();
+                this.redraw();
+            }, 1000);
+        }
+    }
+
+    stopWorkflow() {
+        if (typeof workflowExecutor !== 'undefined') {
+            workflowExecutor.stop();
+            showNotification('⏹️ Workflow stopped', 'warning');
+        }
+    }
+
+    showExecutionResults(execution) {
+        console.log('Execution Results:', execution);
+
+        // Create results modal
+        const modal = document.createElement('div');
+        modal.className = 'template-modal';
+        modal.innerHTML = `
+            <div class="template-modal__content" style="max-width: 800px;">
+                <div class="template-modal__header">
+                    <h3>📊 Execution Results</h3>
+                    <button class="modal-close" onclick="this.closest('.template-modal').remove()">×</button>
+                </div>
+                <div class="template-modal__body">
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: var(--text-primary); margin-bottom: 10px;">Summary</h4>
+                        <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 6px;">
+                            <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: var(--success);">${execution.status}</span></p>
+                            <p style="margin: 5px 0;"><strong>Duration:</strong> ${execution.duration}ms</p>
+                            <p style="margin: 5px 0;"><strong>Nodes Executed:</strong> ${execution.results.length}</p>
+                            <p style="margin: 5px 0;"><strong>Errors:</strong> ${execution.errors.length}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 style="color: var(--text-primary); margin-bottom: 10px;">Node Results</h4>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            ${execution.results.map((result, index) => `
+                                <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                        <strong style="color: var(--text-primary);">${index + 1}. ${result.nodeName}</strong>
+                                        <span style="color: var(--text-tertiary); font-size: 12px;">${result.duration}ms</span>
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">
+                                        <strong>Type:</strong> ${result.nodeType}<br>
+                                        <strong>Output:</strong> <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 3px;">${JSON.stringify(result.output)}</code>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
     }
 }
 
