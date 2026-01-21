@@ -991,6 +991,31 @@
             botConfigModal.showEdit(botId);
         }
 
+        function editBotWorkflow(botId) {
+            // Open strategy builder with bot's workflow loaded
+            window.location.href = `/strategy-builder?bot_id=${botId}`;
+        }
+
+        function cloneBotWorkflow(botId) {
+            // Clone workflow by opening strategy builder with bot's workflow but no bot_id
+            // This creates a new workflow from the bot's workflow definition
+            fetch(`/api/bots/${botId}`)
+                .then(response => response.json())
+                .then(bot => {
+                    if (bot.config && bot.config.workflow) {
+                        // Store workflow in sessionStorage for strategy builder to load
+                        sessionStorage.setItem('clonedWorkflow', JSON.stringify(bot.config.workflow));
+                        window.location.href = '/strategy-builder?clone=true';
+                    } else {
+                        showNotification('No workflow found for this bot', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cloning workflow:', error);
+                    showNotification('Error cloning workflow', 'error');
+                });
+        }
+
         // Load active profile name
         async function loadActiveProfile() {
             try {
@@ -1036,6 +1061,7 @@
             eventFeed.addEvent('info', 'Dashboard initialized', { version: '3.0' });
         };
     </script>
+    <script src="/static/js/components/mini-workflow-renderer.js"></script>
     <script src="/static/js/components/bot-card.js"></script>
     <script src="/static/js/components/profile-modal.js"></script>
     <script src="/static/js/components/bot-config-modal.js"></script>

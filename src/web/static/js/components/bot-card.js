@@ -30,6 +30,8 @@ class BotCard {
                 <p class="bot-card__subtitle">${this.bot.provider_name || 'N/A'} | ${this.bot.pair || 'N/A'}</p>
             </div>
 
+            ${this.renderWorkflowPreview()}
+
             <div class="bot-card__metrics">
                 <div class="metric">
                     <span class="metric__label">Profit (24h)</span>
@@ -64,6 +66,7 @@ class BotCard {
 
         this.container.appendChild(card);
         this.renderSparkline();
+        this.renderWorkflowMiniCanvas();
     }
 
     renderSparkline() {
@@ -152,6 +155,61 @@ class BotCard {
         if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
         if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
         return `${Math.floor(seconds / 86400)}d ago`;
+    }
+
+    renderWorkflowPreview() {
+        // Check if bot has workflow data
+        if (!this.bot.config || !this.bot.config.workflow_based) {
+            return ''; // No workflow preview for non-workflow bots
+        }
+
+        const workflow = this.bot.config.workflow;
+        if (!workflow || !workflow.blocks || workflow.blocks.length === 0) {
+            return '';
+        }
+
+        // Return HTML with canvas and Edit Workflow button
+        return `
+            <div class="bot-card__workflow-preview">
+                <div class="workflow-preview__header">
+                    <span class="workflow-preview__label">📊 Workflow</span>
+                    <div class="workflow-preview__actions">
+                        <button class="btn-mini" onclick="editBotWorkflow('${this.bot.id}')" title="Edit Workflow">
+                            ✏️ Edit
+                        </button>
+                        <button class="btn-mini" onclick="cloneBotWorkflow('${this.bot.id}')" title="Clone Workflow">
+                            📋 Clone
+                        </button>
+                    </div>
+                </div>
+                <div class="workflow-preview__canvas-container">
+                    <canvas id="workflow-preview-${this.bot.id}"></canvas>
+                </div>
+            </div>
+        `;
+    }
+
+    renderWorkflowMiniCanvas() {
+        // Initialize MiniWorkflowRenderer after card is added to DOM
+        if (!this.bot.config || !this.bot.config.workflow) return;
+
+        const canvasId = `workflow-preview-${this.bot.id}`;
+        const workflow = this.bot.config.workflow;
+
+        // Wait for DOM to be ready
+        setTimeout(() => {
+            const canvas = document.getElementById(canvasId);
+            if (canvas && typeof MiniWorkflowRenderer !== 'undefined') {
+                new MiniWorkflowRenderer(canvasId, workflow, {
+                    width: 280,
+                    height: 140,
+                    padding: 8,
+                    blockWidth: 35,
+                    blockHeight: 25,
+                    fontSize: 9
+                });
+            }
+        }, 100);
     }
 
     update(newBot) {
