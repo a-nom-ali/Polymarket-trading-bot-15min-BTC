@@ -44,7 +44,8 @@ class StrategyBuilder {
                 {
                     id: 'polymarket',
                     name: 'Polymarket',
-                    icon: '📊',
+                    icon: '🎯',
+                    description: 'Prediction market (BTC UP/DOWN)',
                     inputs: [],
                     outputs: ['price_feed', 'balance', 'positions', 'orderbook'],
                     config: {
@@ -53,9 +54,10 @@ class StrategyBuilder {
                     }
                 },
                 {
-                    id: 'binance',
-                    name: 'Binance',
-                    icon: '🔗',
+                    id: 'luno',
+                    name: 'Luno',
+                    icon: '🚀',
+                    description: 'Cryptocurrency exchange (BTC/ZAR)',
                     inputs: [],
                     outputs: ['price_feed', 'balance', 'positions', 'orderbook'],
                     config: {
@@ -67,6 +69,67 @@ class StrategyBuilder {
                     id: 'kalshi',
                     name: 'Kalshi',
                     icon: '🎲',
+                    description: 'US-regulated prediction market',
+                    inputs: [],
+                    outputs: ['price_feed', 'balance', 'positions', 'orderbook'],
+                    config: {
+                        profile_id: null,
+                        enabled_endpoints: ['price_feed', 'balance', 'positions', 'orderbook']
+                    }
+                },
+                {
+                    id: 'binance',
+                    name: 'Binance',
+                    icon: '🌐',
+                    description: 'World\'s largest crypto exchange',
+                    inputs: [],
+                    outputs: ['price_feed', 'balance', 'positions', 'orderbook'],
+                    config: {
+                        profile_id: null,
+                        enabled_endpoints: ['price_feed', 'balance', 'positions', 'orderbook']
+                    }
+                },
+                {
+                    id: 'coinbase',
+                    name: 'Coinbase',
+                    icon: '🇺🇸',
+                    description: 'Largest US-based exchange',
+                    inputs: [],
+                    outputs: ['price_feed', 'balance', 'positions', 'orderbook'],
+                    config: {
+                        profile_id: null,
+                        enabled_endpoints: ['price_feed', 'balance', 'positions', 'orderbook']
+                    }
+                },
+                {
+                    id: 'bybit',
+                    name: 'Bybit',
+                    icon: '📊',
+                    description: 'Leading derivatives exchange',
+                    inputs: [],
+                    outputs: ['price_feed', 'balance', 'positions', 'orderbook'],
+                    config: {
+                        profile_id: null,
+                        enabled_endpoints: ['price_feed', 'balance', 'positions', 'orderbook']
+                    }
+                },
+                {
+                    id: 'kraken',
+                    name: 'Kraken',
+                    icon: '🐙',
+                    description: 'Trusted exchange with deep liquidity',
+                    inputs: [],
+                    outputs: ['price_feed', 'balance', 'positions', 'orderbook'],
+                    config: {
+                        profile_id: null,
+                        enabled_endpoints: ['price_feed', 'balance', 'positions', 'orderbook']
+                    }
+                },
+                {
+                    id: 'dydx',
+                    name: 'dYdX',
+                    icon: '⚡',
+                    description: 'Decentralized perpetuals exchange',
                     inputs: [],
                     outputs: ['price_feed', 'balance', 'positions', 'orderbook'],
                     config: {
