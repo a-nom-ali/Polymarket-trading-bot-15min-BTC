@@ -1,0 +1,1720 @@
+{
+  "templates": [
+    {
+      "id": "binary_arbitrage",
+      "name": "Binary Arbitrage",
+      "category": "Arbitrage",
+      "description": "Buy both YES and NO tokens when total cost < $1.00. Guaranteed profit (0.5-3% ROI).",
+      "difficulty": "beginner",
+      "providers": ["polymarket"],
+      "roi": "0.5-3%",
+      "frequency": "10-30/day",
+      "capital": "$100-$1,000",
+      "workflow": {
+        "blocks": [
+          {
+            "id": "polymarket_yes",
+            "type": "polymarket",
+            "category": "providers",
+            "name": "Polymarket (YES)",
+            "icon": "🎯",
+            "x": 50,
+            "y": 100,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed", "orderbook"],
+              "comment": "YES token orderbook"
+            }
+          },
+          {
+            "id": "polymarket_no",
+            "type": "polymarket",
+            "category": "providers",
+            "name": "Polymarket (NO)",
+            "icon": "🎯",
+            "x": 50,
+            "y": 250,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed", "orderbook"],
+              "comment": "NO token orderbook"
+            }
+          },
+          {
+            "id": "add_prices",
+            "type": "math",
+            "category": "conditions",
+            "name": "Add Prices",
+            "icon": "➕",
+            "x": 300,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value1"},
+              {"name": "value2"}
+            ],
+            "outputs": [
+              {"name": "result"}
+            ],
+            "properties": {
+              "operation": "add"
+            }
+          },
+          {
+            "id": "check_threshold",
+            "type": "threshold",
+            "category": "conditions",
+            "name": "Check < $0.99",
+            "icon": "📏",
+            "x": 520,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value"},
+              {"name": "min"},
+              {"name": "max"}
+            ],
+            "outputs": [
+              {"name": "pass"}
+            ],
+            "properties": {
+              "min": 0,
+              "max": 0.99
+            }
+          },
+          {
+            "id": "buy_both",
+            "type": "buy",
+            "category": "actions",
+            "name": "Buy Both Sides",
+            "icon": "💰",
+            "x": 740,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "signal"},
+              {"name": "amount"}
+            ],
+            "outputs": [
+              {"name": "order"}
+            ],
+            "properties": {
+              "order_type": "FOK",
+              "amount": 50
+            }
+          }
+        ],
+        "connections": [
+          {
+            "from": {"blockId": "polymarket_yes", "index": 0},
+            "to": {"blockId": "add_prices", "index": 0}
+          },
+          {
+            "from": {"blockId": "polymarket_no", "index": 0},
+            "to": {"blockId": "add_prices", "index": 1}
+          },
+          {
+            "from": {"blockId": "add_prices", "index": 0},
+            "to": {"blockId": "check_threshold", "index": 0}
+          },
+          {
+            "from": {"blockId": "check_threshold", "index": 0},
+            "to": {"blockId": "buy_both", "index": 0}
+          }
+        ]
+      }
+    },
+    {
+      "id": "cross_exchange_arbitrage",
+      "name": "Cross-Exchange Arbitrage",
+      "category": "Arbitrage",
+      "description": "Buy low on one exchange, sell high on another (Binance ↔ Coinbase).",
+      "difficulty": "beginner",
+      "providers": ["binance", "coinbase"],
+      "roi": "0.3-1.5%",
+      "frequency": "5-20/day",
+      "capital": "$500-$5,000",
+      "workflow": {
+        "blocks": [
+          {
+            "id": "binance_1",
+            "type": "binance",
+            "category": "providers",
+            "name": "Binance",
+            "icon": "🌐",
+            "x": 50,
+            "y": 100,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "coinbase_1",
+            "type": "coinbase",
+            "category": "providers",
+            "name": "Coinbase",
+            "icon": "🇺🇸",
+            "x": 50,
+            "y": 250,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "spread_calc",
+            "type": "math",
+            "category": "conditions",
+            "name": "Calculate Spread",
+            "icon": "📊",
+            "x": 300,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value1"},
+              {"name": "value2"}
+            ],
+            "outputs": [
+              {"name": "result"}
+            ],
+            "properties": {
+              "operation": "subtract"
+            }
+          },
+          {
+            "id": "spread_threshold",
+            "type": "threshold",
+            "category": "conditions",
+            "name": "Spread > 0.3%",
+            "icon": "📏",
+            "x": 520,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value"},
+              {"name": "min"},
+              {"name": "max"}
+            ],
+            "outputs": [
+              {"name": "pass"}
+            ],
+            "properties": {
+              "min": 0.003,
+              "max": 1.0
+            }
+          },
+          {
+            "id": "execute_arb",
+            "type": "buy",
+            "category": "actions",
+            "name": "Execute Arbitrage",
+            "icon": "💱",
+            "x": 740,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "signal"},
+              {"name": "amount"}
+            ],
+            "outputs": [
+              {"name": "order"}
+            ],
+            "properties": {
+              "comment": "Buy on cheaper, sell on expensive"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "from": {"blockId": "binance_1", "index": 0},
+            "to": {"blockId": "spread_calc", "index": 0}
+          },
+          {
+            "from": {"blockId": "coinbase_1", "index": 0},
+            "to": {"blockId": "spread_calc", "index": 1}
+          },
+          {
+            "from": {"blockId": "spread_calc", "index": 0},
+            "to": {"blockId": "spread_threshold", "index": 0}
+          },
+          {
+            "from": {"blockId": "spread_threshold", "index": 0},
+            "to": {"blockId": "execute_arb", "index": 0}
+          }
+        ]
+      }
+    },
+    {
+      "id": "funding_rate_arbitrage",
+      "name": "Funding Rate Arbitrage",
+      "category": "Arbitrage",
+      "description": "Earn funding rate differentials with delta-neutral positions (50-200% APY).",
+      "difficulty": "intermediate",
+      "providers": ["bybit", "binance"],
+      "roi": "50-200% APY",
+      "frequency": "Every 8 hours",
+      "capital": "$1,000-$10,000",
+      "workflow": {
+        "blocks": [
+          {
+            "id": "bybit_perp",
+            "type": "bybit",
+            "category": "providers",
+            "name": "Bybit Perpetuals",
+            "icon": "📊",
+            "x": 50,
+            "y": 100,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed", "positions"],
+              "comment": "Get funding rate"
+            }
+          },
+          {
+            "id": "binance_spot",
+            "type": "binance",
+            "category": "providers",
+            "name": "Binance Spot",
+            "icon": "🌐",
+            "x": 50,
+            "y": 250,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "funding_check",
+            "type": "threshold",
+            "category": "conditions",
+            "name": "Funding > 0.01%",
+            "icon": "💰",
+            "x": 300,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value"},
+              {"name": "min"},
+              {"name": "max"}
+            ],
+            "outputs": [
+              {"name": "pass"}
+            ],
+            "properties": {
+              "min": 0.0001,
+              "max": 1.0,
+              "comment": "Positive funding rate"
+            }
+          },
+          {
+            "id": "delta_neutral",
+            "type": "buy",
+            "category": "actions",
+            "name": "Delta Neutral Position",
+            "icon": "⚖️",
+            "x": 520,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "signal"},
+              {"name": "amount"}
+            ],
+            "outputs": [
+              {"name": "order"}
+            ],
+            "properties": {
+              "comment": "Short perp + Long spot"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "from": {"blockId": "bybit_perp", "index": 0},
+            "to": {"blockId": "funding_check", "index": 0}
+          },
+          {
+            "from": {"blockId": "funding_check", "index": 0},
+            "to": {"blockId": "delta_neutral", "index": 0}
+          }
+        ]
+      }
+    },
+    {
+      "id": "triangular_arbitrage",
+      "name": "Triangular Arbitrage",
+      "category": "Arbitrage",
+      "description": "Exploit pricing inefficiencies in circular currency paths (0.1-0.5% ROI).",
+      "difficulty": "advanced",
+      "providers": ["binance", "kraken", "coinbase"],
+      "roi": "0.1-0.5%",
+      "frequency": "2-10/day",
+      "capital": "$1,000-$5,000",
+      "workflow": {
+        "blocks": [
+          {
+            "id": "binance_btcusd",
+            "type": "binance",
+            "category": "providers",
+            "name": "Binance BTC/USD",
+            "icon": "🌐",
+            "x": 50,
+            "y": 50,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "kraken_usdeur",
+            "type": "kraken",
+            "category": "providers",
+            "name": "Kraken USD/EUR",
+            "icon": "🐙",
+            "x": 50,
+            "y": 200,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "coinbase_eurbtc",
+            "type": "coinbase",
+            "category": "providers",
+            "name": "Coinbase EUR/BTC",
+            "icon": "🇺🇸",
+            "x": 50,
+            "y": 350,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "triangle_calc",
+            "type": "math",
+            "category": "conditions",
+            "name": "Triangle Calculator",
+            "icon": "🔺",
+            "x": 300,
+            "y": 200,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "rate1"},
+              {"name": "rate2"},
+              {"name": "rate3"}
+            ],
+            "outputs": [
+              {"name": "result"}
+            ],
+            "properties": {
+              "operation": "multiply_chain",
+              "comment": "BTC→USD→EUR→BTC"
+            }
+          },
+          {
+            "id": "profit_check",
+            "type": "threshold",
+            "category": "conditions",
+            "name": "Profit > 0.1%",
+            "icon": "✅",
+            "x": 520,
+            "y": 200,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value"},
+              {"name": "min"},
+              {"name": "max"}
+            ],
+            "outputs": [
+              {"name": "pass"}
+            ],
+            "properties": {
+              "min": 0.001,
+              "max": 1.0
+            }
+          },
+          {
+            "id": "execute_triangle",
+            "type": "buy",
+            "category": "actions",
+            "name": "Execute Triangle",
+            "icon": "🔄",
+            "x": 740,
+            "y": 200,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "signal"},
+              {"name": "amount"}
+            ],
+            "outputs": [
+              {"name": "order"}
+            ],
+            "properties": {
+              "comment": "Execute 3 trades atomically"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "from": {"blockId": "binance_btcusd", "index": 0},
+            "to": {"blockId": "triangle_calc", "index": 0}
+          },
+          {
+            "from": {"blockId": "kraken_usdeur", "index": 0},
+            "to": {"blockId": "triangle_calc", "index": 1}
+          },
+          {
+            "from": {"blockId": "coinbase_eurbtc", "index": 0},
+            "to": {"blockId": "triangle_calc", "index": 2}
+          },
+          {
+            "from": {"blockId": "triangle_calc", "index": 0},
+            "to": {"blockId": "profit_check", "index": 0}
+          },
+          {
+            "from": {"blockId": "profit_check", "index": 0},
+            "to": {"blockId": "execute_triangle", "index": 0}
+          }
+        ]
+      }
+    },
+    {
+      "id": "cross_platform_arbitrage",
+      "name": "Cross-Platform Arbitrage",
+      "category": "Arbitrage",
+      "description": "Exploit price discrepancies between Polymarket & Kalshi ($40M+ opportunity).",
+      "difficulty": "intermediate",
+      "providers": ["polymarket", "kalshi"],
+      "roi": "1-5%",
+      "frequency": "5-15/day",
+      "capital": "$500-$5,000",
+      "workflow": {
+        "blocks": [
+          {
+            "id": "polymarket_market",
+            "type": "polymarket",
+            "category": "providers",
+            "name": "Polymarket",
+            "icon": "🎯",
+            "x": 50,
+            "y": 100,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "kalshi_market",
+            "type": "kalshi",
+            "category": "providers",
+            "name": "Kalshi",
+            "icon": "🎲",
+            "x": 50,
+            "y": 250,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "compare_odds",
+            "type": "compare",
+            "category": "conditions",
+            "name": "Compare Odds",
+            "icon": "⚖️",
+            "x": 300,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value1"},
+              {"name": "value2"}
+            ],
+            "outputs": [
+              {"name": "result"}
+            ],
+            "properties": {
+              "operator": ">"
+            }
+          },
+          {
+            "id": "deviation_check",
+            "type": "threshold",
+            "category": "conditions",
+            "name": "Deviation > 5%",
+            "icon": "📏",
+            "x": 520,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value"},
+              {"name": "min"},
+              {"name": "max"}
+            ],
+            "outputs": [
+              {"name": "pass"}
+            ],
+            "properties": {
+              "min": 0.05,
+              "max": 1.0
+            }
+          },
+          {
+            "id": "hedge_position",
+            "type": "buy",
+            "category": "actions",
+            "name": "Hedge Position",
+            "icon": "🛡️",
+            "x": 740,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "signal"},
+              {"name": "amount"}
+            ],
+            "outputs": [
+              {"name": "order"}
+            ],
+            "properties": {
+              "comment": "Buy cheap, sell expensive"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "from": {"blockId": "polymarket_market", "index": 0},
+            "to": {"blockId": "compare_odds", "index": 0}
+          },
+          {
+            "from": {"blockId": "kalshi_market", "index": 0},
+            "to": {"blockId": "compare_odds", "index": 1}
+          },
+          {
+            "from": {"blockId": "compare_odds", "index": 0},
+            "to": {"blockId": "deviation_check", "index": 0}
+          },
+          {
+            "from": {"blockId": "deviation_check", "index": 0},
+            "to": {"blockId": "hedge_position", "index": 0}
+          }
+        ]
+      }
+    },
+    {
+      "id": "market_making",
+      "name": "Simple Market Making",
+      "category": "Market Making",
+      "description": "Post bid/ask spreads to capture liquidity (80-200% APY).",
+      "difficulty": "intermediate",
+      "providers": ["polymarket"],
+      "roi": "80-200% APY",
+      "frequency": "Continuous",
+      "capital": "$1,000-$10,000",
+      "workflow": {
+        "blocks": [
+          {
+            "id": "polymarket_mm",
+            "type": "polymarket",
+            "category": "providers",
+            "name": "Polymarket",
+            "icon": "🎯",
+            "x": 50,
+            "y": 150,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed", "orderbook", "positions"]
+            }
+          },
+          {
+            "id": "spread_calc_mm",
+            "type": "math",
+            "category": "conditions",
+            "name": "Calculate Spread",
+            "icon": "📊",
+            "x": 300,
+            "y": 150,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "mid_price"},
+              {"name": "spread_pct"}
+            ],
+            "outputs": [
+              {"name": "bid_price"},
+              {"name": "ask_price"}
+            ],
+            "properties": {
+              "spread_pct": 0.02,
+              "comment": "2% spread around mid"
+            }
+          },
+          {
+            "id": "place_orders_mm",
+            "type": "buy",
+            "category": "actions",
+            "name": "Place Bid/Ask",
+            "icon": "📋",
+            "x": 520,
+            "y": 150,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "bid_price"},
+              {"name": "ask_price"},
+              {"name": "size"}
+            ],
+            "outputs": [
+              {"name": "orders"}
+            ],
+            "properties": {
+              "size": 100,
+              "order_type": "GTC"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "from": {"blockId": "polymarket_mm", "index": 0},
+            "to": {"blockId": "spread_calc_mm", "index": 0}
+          },
+          {
+            "from": {"blockId": "spread_calc_mm", "index": 0},
+            "to": {"blockId": "place_orders_mm", "index": 0}
+          },
+          {
+            "from": {"blockId": "spread_calc_mm", "index": 1},
+            "to": {"blockId": "place_orders_mm", "index": 1}
+          }
+        ]
+      }
+    },
+    {
+      "id": "high_probability_bond",
+      "name": "High-Probability Bond",
+      "category": "Prediction Markets",
+      "description": "Buy near-certain outcomes (>95%) close to resolution (1-5% ROI, 1800% APY).",
+      "difficulty": "beginner",
+      "providers": ["polymarket"],
+      "roi": "1-5% per trade",
+      "frequency": "1-5/day",
+      "capital": "$100-$5,000",
+      "workflow": {
+        "blocks": [
+          {
+            "id": "polymarket_hpb",
+            "type": "polymarket",
+            "category": "providers",
+            "name": "Polymarket",
+            "icon": "🎯",
+            "x": 50,
+            "y": 150,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "probability_check",
+            "type": "threshold",
+            "category": "conditions",
+            "name": "Probability > 95%",
+            "icon": "📈",
+            "x": 300,
+            "y": 150,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value"},
+              {"name": "min"},
+              {"name": "max"}
+            ],
+            "outputs": [
+              {"name": "pass"}
+            ],
+            "properties": {
+              "min": 0.95,
+              "max": 0.99,
+              "comment": "High probability outcome"
+            }
+          },
+          {
+            "id": "time_check",
+            "type": "time_trigger",
+            "category": "triggers",
+            "name": "Close to Resolution",
+            "icon": "⏰",
+            "x": 300,
+            "y": 260,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "schedule"}
+            ],
+            "outputs": [
+              {"name": "signal"}
+            ],
+            "properties": {
+              "time_to_resolution": "< 24 hours"
+            }
+          },
+          {
+            "id": "and_gate",
+            "type": "and",
+            "category": "conditions",
+            "name": "Both Conditions",
+            "icon": "🔀",
+            "x": 520,
+            "y": 205,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "input1"},
+              {"name": "input2"}
+            ],
+            "outputs": [
+              {"name": "output"}
+            ],
+            "properties": {}
+          },
+          {
+            "id": "buy_bond",
+            "type": "buy",
+            "category": "actions",
+            "name": "Buy Bond",
+            "icon": "💎",
+            "x": 740,
+            "y": 205,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "signal"},
+              {"name": "amount"}
+            ],
+            "outputs": [
+              {"name": "order"}
+            ],
+            "properties": {
+              "comment": "High-probability outcome"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "from": {"blockId": "polymarket_hpb", "index": 0},
+            "to": {"blockId": "probability_check", "index": 0}
+          },
+          {
+            "from": {"blockId": "probability_check", "index": 0},
+            "to": {"blockId": "and_gate", "index": 0}
+          },
+          {
+            "from": {"blockId": "time_check", "index": 0},
+            "to": {"blockId": "and_gate", "index": 1}
+          },
+          {
+            "from": {"blockId": "and_gate", "index": 0},
+            "to": {"blockId": "buy_bond", "index": 0}
+          }
+        ]
+      }
+    },
+    {
+      "id": "momentum_trading",
+      "name": "Momentum Trading",
+      "category": "Directional",
+      "description": "Follow strong price trends with momentum indicators (5-30% per trade).",
+      "difficulty": "intermediate",
+      "providers": ["binance"],
+      "roi": "5-30%",
+      "frequency": "2-10/day",
+      "capital": "$500-$5,000",
+      "workflow": {
+        "blocks": [
+          {
+            "id": "binance_momentum",
+            "type": "binance",
+            "category": "providers",
+            "name": "Binance",
+            "icon": "🌐",
+            "x": 50,
+            "y": 150,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "rsi_signal",
+            "type": "rsi_signal",
+            "category": "triggers",
+            "name": "RSI Signal",
+            "icon": "📉",
+            "x": 300,
+            "y": 150,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "period"},
+              {"name": "overbought"},
+              {"name": "oversold"}
+            ],
+            "outputs": [
+              {"name": "signal"}
+            ],
+            "properties": {
+              "period": 14,
+              "overbought": 70,
+              "oversold": 30
+            }
+          },
+          {
+            "id": "volume_spike",
+            "type": "volume_spike",
+            "category": "triggers",
+            "name": "Volume Confirmation",
+            "icon": "📊",
+            "x": 300,
+            "y": 260,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "volume"},
+              {"name": "multiplier"}
+            ],
+            "outputs": [
+              {"name": "signal"}
+            ],
+            "properties": {
+              "multiplier": 2.0,
+              "comment": "2x avg volume"
+            }
+          },
+          {
+            "id": "and_momentum",
+            "type": "and",
+            "category": "conditions",
+            "name": "Confirmed Signal",
+            "icon": "✅",
+            "x": 520,
+            "y": 205,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "input1"},
+              {"name": "input2"}
+            ],
+            "outputs": [
+              {"name": "output"}
+            ],
+            "properties": {}
+          },
+          {
+            "id": "trade_momentum",
+            "type": "buy",
+            "category": "actions",
+            "name": "Enter Trade",
+            "icon": "🚀",
+            "x": 740,
+            "y": 205,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "signal"},
+              {"name": "amount"}
+            ],
+            "outputs": [
+              {"name": "order"}
+            ],
+            "properties": {}
+          }
+        ],
+        "connections": [
+          {
+            "from": {"blockId": "binance_momentum", "index": 0},
+            "to": {"blockId": "rsi_signal", "index": 0}
+          },
+          {
+            "from": {"blockId": "rsi_signal", "index": 0},
+            "to": {"blockId": "and_momentum", "index": 0}
+          },
+          {
+            "from": {"blockId": "volume_spike", "index": 0},
+            "to": {"blockId": "and_momentum", "index": 1}
+          },
+          {
+            "from": {"blockId": "and_momentum", "index": 0},
+            "to": {"blockId": "trade_momentum", "index": 0}
+          }
+        ]
+      }
+    },
+    {
+      "id": "statistical_arbitrage",
+      "name": "Statistical Arbitrage",
+      "category": "Arbitrage",
+      "description": "Trade price deviations using mean reversion across exchanges (0.5-2% ROI).",
+      "difficulty": "advanced",
+      "providers": ["binance", "coinbase", "kraken"],
+      "roi": "0.5-2%",
+      "frequency": "10-50/day",
+      "capital": "$2,000-$20,000",
+      "workflow": {
+        "blocks": [
+          {
+            "id": "binance_stat",
+            "type": "binance",
+            "category": "providers",
+            "name": "Binance",
+            "icon": "🌐",
+            "x": 50,
+            "y": 50,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "coinbase_stat",
+            "type": "coinbase",
+            "category": "providers",
+            "name": "Coinbase",
+            "icon": "🇺🇸",
+            "x": 50,
+            "y": 200,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "kraken_stat",
+            "type": "kraken",
+            "category": "providers",
+            "name": "Kraken",
+            "icon": "🐙",
+            "x": 50,
+            "y": 350,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "mean_calc",
+            "type": "math",
+            "category": "conditions",
+            "name": "Calculate Mean",
+            "icon": "📊",
+            "x": 300,
+            "y": 200,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value1"},
+              {"name": "value2"},
+              {"name": "value3"}
+            ],
+            "outputs": [
+              {"name": "mean"},
+              {"name": "std_dev"}
+            ],
+            "properties": {
+              "operation": "mean_std"
+            }
+          },
+          {
+            "id": "deviation_check_stat",
+            "type": "threshold",
+            "category": "conditions",
+            "name": "Deviation > 2σ",
+            "icon": "📏",
+            "x": 520,
+            "y": 200,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value"},
+              {"name": "min"},
+              {"name": "max"}
+            ],
+            "outputs": [
+              {"name": "pass"}
+            ],
+            "properties": {
+              "min": 2.0,
+              "max": 5.0,
+              "comment": "2-5 std devs"
+            }
+          },
+          {
+            "id": "trade_reversion",
+            "type": "buy",
+            "category": "actions",
+            "name": "Mean Reversion Trade",
+            "icon": "🔄",
+            "x": 740,
+            "y": 200,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "signal"},
+              {"name": "amount"}
+            ],
+            "outputs": [
+              {"name": "order"}
+            ],
+            "properties": {
+              "comment": "Fade the outlier"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "from": {"blockId": "binance_stat", "index": 0},
+            "to": {"blockId": "mean_calc", "index": 0}
+          },
+          {
+            "from": {"blockId": "coinbase_stat", "index": 0},
+            "to": {"blockId": "mean_calc", "index": 1}
+          },
+          {
+            "from": {"blockId": "kraken_stat", "index": 0},
+            "to": {"blockId": "mean_calc", "index": 2}
+          },
+          {
+            "from": {"blockId": "mean_calc", "index": 1},
+            "to": {"blockId": "deviation_check_stat", "index": 0}
+          },
+          {
+            "from": {"blockId": "deviation_check_stat", "index": 0},
+            "to": {"blockId": "trade_reversion", "index": 0}
+          }
+        ]
+      }
+    },
+    {
+      "id": "basis_trading",
+      "name": "Basis Trading",
+      "category": "Arbitrage",
+      "description": "Capture basis spread + funding with spot-futures arbitrage (80-200% APY).",
+      "difficulty": "advanced",
+      "providers": ["binance", "bybit"],
+      "roi": "80-200% APY",
+      "frequency": "Daily",
+      "capital": "$5,000-$50,000",
+      "workflow": {
+        "blocks": [
+          {
+            "id": "binance_spot_basis",
+            "type": "binance",
+            "category": "providers",
+            "name": "Binance Spot",
+            "icon": "🌐",
+            "x": 50,
+            "y": 100,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "bybit_futures",
+            "type": "bybit",
+            "category": "providers",
+            "name": "Bybit Futures",
+            "icon": "📊",
+            "x": 50,
+            "y": 250,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "basis_calc",
+            "type": "math",
+            "category": "conditions",
+            "name": "Calculate Basis",
+            "icon": "💹",
+            "x": 300,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "futures_price"},
+              {"name": "spot_price"}
+            ],
+            "outputs": [
+              {"name": "basis_pct"}
+            ],
+            "properties": {
+              "operation": "percentage_diff",
+              "comment": "(Futures - Spot) / Spot"
+            }
+          },
+          {
+            "id": "basis_threshold",
+            "type": "threshold",
+            "category": "conditions",
+            "name": "Basis > 0.5%",
+            "icon": "📈",
+            "x": 520,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value"},
+              {"name": "min"},
+              {"name": "max"}
+            ],
+            "outputs": [
+              {"name": "pass"}
+            ],
+            "properties": {
+              "min": 0.005,
+              "max": 1.0
+            }
+          },
+          {
+            "id": "basis_trade",
+            "type": "buy",
+            "category": "actions",
+            "name": "Basis Trade",
+            "icon": "⚖️",
+            "x": 740,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "signal"},
+              {"name": "amount"}
+            ],
+            "outputs": [
+              {"name": "order"}
+            ],
+            "properties": {
+              "comment": "Long spot + Short futures"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "from": {"blockId": "binance_spot_basis", "index": 0},
+            "to": {"blockId": "basis_calc", "index": 1}
+          },
+          {
+            "from": {"blockId": "bybit_futures", "index": 0},
+            "to": {"blockId": "basis_calc", "index": 0}
+          },
+          {
+            "from": {"blockId": "basis_calc", "index": 0},
+            "to": {"blockId": "basis_threshold", "index": 0}
+          },
+          {
+            "from": {"blockId": "basis_threshold", "index": 0},
+            "to": {"blockId": "basis_trade", "index": 0}
+          }
+        ]
+      }
+    },
+    {
+      "id": "liquidation_sniping",
+      "name": "Liquidation Sniping",
+      "category": "High Risk",
+      "description": "Snipe liquidation cascades on derivatives exchanges (2-10% ROI, HIGH RISK).",
+      "difficulty": "expert",
+      "providers": ["bybit", "dydx"],
+      "roi": "2-10%",
+      "frequency": "1-5/day",
+      "capital": "$10,000-$100,000",
+      "workflow": {
+        "blocks": [
+          {
+            "id": "bybit_liq",
+            "type": "bybit",
+            "category": "providers",
+            "name": "Bybit",
+            "icon": "📊",
+            "x": 50,
+            "y": 100,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed", "orderbook"]
+            }
+          },
+          {
+            "id": "liquidation_monitor",
+            "type": "event_listener",
+            "category": "triggers",
+            "name": "Monitor Liquidations",
+            "icon": "👂",
+            "x": 300,
+            "y": 100,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "event_type"}
+            ],
+            "outputs": [
+              {"name": "event"}
+            ],
+            "properties": {
+              "event_type": "liquidation",
+              "comment": "Track liquidation levels"
+            }
+          },
+          {
+            "id": "cascade_detector",
+            "type": "threshold",
+            "category": "conditions",
+            "name": "Cascade Detected",
+            "icon": "⚡",
+            "x": 520,
+            "y": 100,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value"},
+              {"name": "min"},
+              {"name": "max"}
+            ],
+            "outputs": [
+              {"name": "pass"}
+            ],
+            "properties": {
+              "min": 1000000,
+              "comment": "$1M+ liquidation cluster"
+            }
+          },
+          {
+            "id": "stop_loss_liq",
+            "type": "stop_loss",
+            "category": "risk",
+            "name": "Tight Stop Loss",
+            "icon": "🛑",
+            "x": 520,
+            "y": 220,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "price"},
+              {"name": "stop_pct"}
+            ],
+            "outputs": [
+              {"name": "trigger"}
+            ],
+            "properties": {
+              "stop_pct": 0.01,
+              "comment": "1% stop loss"
+            }
+          },
+          {
+            "id": "snipe_liquidation",
+            "type": "buy",
+            "category": "actions",
+            "name": "Snipe Order",
+            "icon": "🎯",
+            "x": 740,
+            "y": 160,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "signal"},
+              {"name": "amount"}
+            ],
+            "outputs": [
+              {"name": "order"}
+            ],
+            "properties": {
+              "order_type": "Market",
+              "comment": "⚠️ HIGH RISK STRATEGY"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "from": {"blockId": "bybit_liq", "index": 3},
+            "to": {"blockId": "liquidation_monitor", "index": 0}
+          },
+          {
+            "from": {"blockId": "liquidation_monitor", "index": 0},
+            "to": {"blockId": "cascade_detector", "index": 0}
+          },
+          {
+            "from": {"blockId": "cascade_detector", "index": 0},
+            "to": {"blockId": "snipe_liquidation", "index": 0}
+          }
+        ]
+      }
+    },
+    {
+      "id": "defi_cefi_arbitrage",
+      "name": "DeFi vs CeFi Arbitrage",
+      "category": "Arbitrage",
+      "description": "Trade differences between decentralized and centralized exchanges.",
+      "difficulty": "advanced",
+      "providers": ["dydx", "coinbase"],
+      "roi": "0.5-3%",
+      "frequency": "5-15/day",
+      "capital": "$2,000-$20,000",
+      "workflow": {
+        "blocks": [
+          {
+            "id": "dydx_defi",
+            "type": "dydx",
+            "category": "providers",
+            "name": "dYdX (DeFi)",
+            "icon": "⚡",
+            "x": 50,
+            "y": 100,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "coinbase_cefi",
+            "type": "coinbase",
+            "category": "providers",
+            "name": "Coinbase (CeFi)",
+            "icon": "🇺🇸",
+            "x": 50,
+            "y": 250,
+            "width": 150,
+            "height": 120,
+            "inputs": [],
+            "outputs": [
+              {"name": "price_feed"},
+              {"name": "balance"},
+              {"name": "positions"},
+              {"name": "orderbook"}
+            ],
+            "properties": {
+              "profile_id": null,
+              "enabled_endpoints": ["price_feed"]
+            }
+          },
+          {
+            "id": "premium_calc",
+            "type": "math",
+            "category": "conditions",
+            "name": "Calculate Premium",
+            "icon": "💎",
+            "x": 300,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "defi_price"},
+              {"name": "cefi_price"}
+            ],
+            "outputs": [
+              {"name": "premium_pct"}
+            ],
+            "properties": {
+              "operation": "percentage_diff"
+            }
+          },
+          {
+            "id": "premium_threshold",
+            "type": "threshold",
+            "category": "conditions",
+            "name": "Premium > 0.5%",
+            "icon": "📏",
+            "x": 520,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "value"},
+              {"name": "min"},
+              {"name": "max"}
+            ],
+            "outputs": [
+              {"name": "pass"}
+            ],
+            "properties": {
+              "min": 0.005,
+              "max": 1.0
+            }
+          },
+          {
+            "id": "execute_defi_arb",
+            "type": "buy",
+            "category": "actions",
+            "name": "DeFi/CeFi Arb",
+            "icon": "🔄",
+            "x": 740,
+            "y": 175,
+            "width": 150,
+            "height": 80,
+            "inputs": [
+              {"name": "signal"},
+              {"name": "amount"}
+            ],
+            "outputs": [
+              {"name": "order"}
+            ],
+            "properties": {
+              "comment": "Buy cheap, sell expensive"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "from": {"blockId": "dydx_defi", "index": 0},
+            "to": {"blockId": "premium_calc", "index": 0}
+          },
+          {
+            "from": {"blockId": "coinbase_cefi", "index": 0},
+            "to": {"blockId": "premium_calc", "index": 1}
+          },
+          {
+            "from": {"blockId": "premium_calc", "index": 0},
+            "to": {"blockId": "premium_threshold", "index": 0}
+          },
+          {
+            "from": {"blockId": "premium_threshold", "index": 0},
+            "to": {"blockId": "execute_defi_arb", "index": 0}
+          }
+        ]
+      }
+    }
+  ],
+  "categories": [
+    {
+      "id": "arbitrage",
+      "name": "Arbitrage",
+      "description": "Low-risk strategies exploiting price differences",
+      "icon": "💱"
+    },
+    {
+      "id": "market_making",
+      "name": "Market Making",
+      "description": "Provide liquidity and capture spreads",
+      "icon": "📋"
+    },
+    {
+      "id": "directional",
+      "name": "Directional",
+      "description": "Trend-following and momentum strategies",
+      "icon": "📈"
+    },
+    {
+      "id": "prediction_markets",
+      "name": "Prediction Markets",
+      "description": "Event-based trading strategies",
+      "icon": "🎯"
+    },
+    {
+      "id": "high_risk",
+      "name": "High Risk",
+      "description": "Advanced strategies with higher risk/reward",
+      "icon": "⚡"
+    }
+  ]
+}

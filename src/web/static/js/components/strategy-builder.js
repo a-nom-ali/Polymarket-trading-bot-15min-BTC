@@ -1367,6 +1367,141 @@ class StrategyBuilder {
         showNotification('Strategy saved!', 'success');
     }
 
+    async loadTemplate() {
+        try {
+            // Fetch templates from JSON file
+            const response = await fetch('/static/data/workflow-templates.json');
+            if (!response.ok) throw new Error('Failed to load templates');
+
+            const data = await response.json();
+            this.showTemplateSelector(data.templates, data.categories);
+        } catch (error) {
+            console.error('Error loading templates:', error);
+            showNotification('❌ Failed to load templates', 'error');
+        }
+    }
+
+    showTemplateSelector(templates, categories) {
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'template-selector-modal';
+
+        // Group templates by category
+        const templatesByCategory = {};
+        templates.forEach(template => {
+            const cat = template.category.toLowerCase().replace(/ /g, '_');
+            if (!templatesByCategory[cat]) {
+                templatesByCategory[cat] = [];
+            }
+            templatesByCategory[cat].push(template);
+        });
+
+        modal.innerHTML = `
+            <div class="template-selector-modal__content">
+                <div class="template-selector-modal__header">
+                    <h3>📋 Strategy Templates</h3>
+                    <button class="toolbar__btn" onclick="this.closest('.template-selector-modal').remove()">✕ Close</button>
+                </div>
+                <div class="template-selector-modal__body">
+                    <div class="template-categories">
+                        ${Object.keys(templatesByCategory).map(category => {
+                            const categoryTemplates = templatesByCategory[category];
+                            const categoryName = categoryTemplates[0].category;
+
+                            return `
+                                <div class="template-category">
+                                    <h4 class="template-category__header">${categoryName}</h4>
+                                    <div class="template-cards">
+                                        ${categoryTemplates.map(template => `
+                                            <div class="template-card" onclick="strategyBuilder.loadTemplateById('${template.id}')">
+                                                <div class="template-card__header">
+                                                    <h5>${template.name}</h5>
+                                                    <span class="template-card__difficulty template-card__difficulty--${template.difficulty}">
+                                                        ${template.difficulty}
+                                                    </span>
+                                                </div>
+                                                <p class="template-card__description">${template.description}</p>
+                                                <div class="template-card__stats">
+                                                    <div class="template-stat">
+                                                        <span class="template-stat__label">ROI</span>
+                                                        <span class="template-stat__value">${template.roi}</span>
+                                                    </div>
+                                                    <div class="template-stat">
+                                                        <span class="template-stat__label">Frequency</span>
+                                                        <span class="template-stat__value">${template.frequency}</span>
+                                                    </div>
+                                                    <div class="template-stat">
+                                                        <span class="template-stat__label">Capital</span>
+                                                        <span class="template-stat__value">${template.capital}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="template-card__providers">
+                                                    ${template.providers.map(p => {
+                                                        const providerInfo = this.blockLibrary.providers.find(bp => bp.id === p);
+                                                        return providerInfo ? `<span class="provider-tag">${providerInfo.icon} ${providerInfo.name}</span>` : '';
+                                                    }).join('')}
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Click outside to close
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    async loadTemplateById(templateId) {
+        try {
+            // Fetch templates from JSON file
+            const response = await fetch('/static/data/workflow-templates.json');
+            if (!response.ok) throw new Error('Failed to load templates');
+
+            const data = await response.json();
+            const template = data.templates.find(t => t.id === templateId);
+
+            if (!template) {
+                throw new Error(`Template ${templateId} not found`);
+            }
+
+            // Confirm if canvas is not empty
+            if (this.blocks.length > 0) {
+                if (!confirm('This will replace your current workflow. Continue?')) {
+                    return;
+                }
+            }
+
+            // Load the template workflow
+            this.blocks = JSON.parse(JSON.stringify(template.workflow.blocks));
+            this.connections = JSON.parse(JSON.stringify(template.workflow.connections));
+            this.strategyName = template.name;
+
+            // Close the modal
+            const modal = document.querySelector('.template-selector-modal');
+            if (modal) modal.remove();
+
+            // Redraw canvas
+            this.redraw();
+            this.saveState();
+
+            showNotification(`✅ Loaded template: ${template.name}`, 'success');
+        } catch (error) {
+            console.error('Error loading template:', error);
+            showNotification(`❌ Failed to load template: ${error.message}`, 'error');
+        }
+    }
+
     validate() {
         const errors = [];
 
