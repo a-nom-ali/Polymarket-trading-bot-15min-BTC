@@ -60,23 +60,40 @@ A **multi-domain automation platform** that uses a generic abstraction layer to 
 
 ### 🚧 In Progress
 
-**Dashboard System** - Week 1 of 6-week plan
+**Infrastructure Hardening** - Week 2 (PIVOTED FROM UI)
 
-**Status**: Planning complete, ready to start implementation
+**Status**: Week 1 complete, Week 2 plan ready
 
-**Next Immediate Tasks**:
-1. Create wireframes for Main Dashboard (ASCII art in `WIREFRAMES.md`)
-2. Set up React + Vite project (`web/` directory)
-3. Install dependencies (TypeScript, Tailwind, shadcn/ui, Socket.io)
-4. Document design tokens (colors, spacing, typography)
-5. Create component catalog template
+**Critical Pivot Decision**: Based on pain points analysis, Week 2 pivots from WebSocket UI to infrastructure hardening. A beautiful dashboard on a fragile backend would hit the same "97% break under scale" problem as n8n.
+
+**Week 2 Focus**:
+1. State management abstraction (memory + Redis)
+2. Event bus abstraction (memory + Redis pub/sub)
+3. Structured logging with correlation IDs
+4. Retry logic and circuit breakers
+5. Emergency halt controls
+6. Configuration system (.env support)
+
+**See**: `WEEK_2_INFRASTRUCTURE_PLAN.md` and `PAIN_POINTS_ANALYSIS.md`
+
+### ✅ Recently Completed
+
+**Week 1: Wireframes & React Project Setup**
+- ✅ Complete wireframes in `WIREFRAMES.md` (all 3 tiers)
+- ✅ React + Vite + TypeScript project in `web/`
+- ✅ TailwindCSS with custom design tokens
+- ✅ Type-safe API and WebSocket services
+- ✅ Component catalog template
+- ✅ Folder structure established
 
 ### ❌ Not Started
 
-- WebSocket infrastructure (Week 2)
-- Main Dashboard UI (Week 3)
-- Bot Dashboard UI (Week 4)
-- Strategy View UI (Week 5)
+- PostgreSQL for execution history (Week 3)
+- Monitoring stack (Prometheus + Grafana) (Week 4)
+- WebSocket infrastructure (Week 4)
+- Main Dashboard UI (Week 5)
+- Bot Dashboard UI (Week 5)
+- Strategy View UI (Week 6)
 - Ad platform integration
 - Ecommerce integration
 
