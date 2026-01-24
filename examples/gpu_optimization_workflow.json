@@ -1,0 +1,153 @@
+{
+  "name": "GPU Capacity Optimization",
+  "description": "Automatically decides when to list GPUs on Vast.ai based on market rates and operating costs",
+  "version": "1.0.0",
+  "domain": "gpu_compute",
+  "blocks": [
+    {
+      "id": "market_rate",
+      "category": "source",
+      "type": "gpu_market_rate",
+      "properties": {
+        "gpu_model": "RTX_4090",
+        "marketplace": "vast.ai"
+      },
+      "position": {"x": 100, "y": 100}
+    },
+    {
+      "id": "operating_cost",
+      "category": "transform",
+      "type": "gpu_operating_cost",
+      "properties": {
+        "power_watts": 450,
+        "power_cost_per_kwh": 0.12,
+        "maintenance_cost_per_hour": 0.02
+      },
+      "position": {"x": 100, "y": 250}
+    },
+    {
+      "id": "profitability",
+      "category": "scorer",
+      "type": "gpu_profitability",
+      "properties": {
+        "min_margin_pct": 25.0
+      },
+      "position": {"x": 400, "y": 175}
+    },
+    {
+      "id": "profitable_check",
+      "category": "condition",
+      "type": "threshold_check",
+      "properties": {
+        "threshold": 0.10,
+        "operator": ">=",
+        "description": "Check if profit >= $0.10/hour"
+      },
+      "position": {"x": 700, "y": 175}
+    },
+    {
+      "id": "list_gpu",
+      "category": "executor",
+      "type": "gpu_list_action",
+      "properties": {
+        "gpu_id": "gpu_rtx4090_001"
+      },
+      "position": {"x": 1000, "y": 175}
+    },
+    {
+      "id": "notify",
+      "category": "monitor",
+      "type": "notify",
+      "properties": {
+        "channel": "slack",
+        "message_template": "GPU listed at ${suggested_price}/hr. Expected profit: ${profit_per_hour}/hr"
+      },
+      "position": {"x": 1000, "y": 350}
+    }
+  ],
+  "connections": [
+    {
+      "from": {
+        "blockId": "market_rate",
+        "index": 0
+      },
+      "to": {
+        "blockId": "profitability",
+        "index": 0
+      },
+      "label": "median_rate"
+    },
+    {
+      "from": {
+        "blockId": "operating_cost",
+        "index": 2
+      },
+      "to": {
+        "blockId": "profitability",
+        "index": 1
+      },
+      "label": "total_cost_per_hour"
+    },
+    {
+      "from": {
+        "blockId": "profitability",
+        "index": 1
+      },
+      "to": {
+        "blockId": "profitable_check",
+        "index": 0
+      },
+      "label": "profit_per_hour"
+    },
+    {
+      "from": {
+        "blockId": "profitable_check",
+        "index": 0
+      },
+      "to": {
+        "blockId": "list_gpu",
+        "index": 0
+      },
+      "label": "passed",
+      "condition": "only_if_true"
+    },
+    {
+      "from": {
+        "blockId": "profitability",
+        "index": 3
+      },
+      "to": {
+        "blockId": "list_gpu",
+        "index": 1
+      },
+      "label": "suggested_price"
+    },
+    {
+      "from": {
+        "blockId": "list_gpu",
+        "index": 0
+      },
+      "to": {
+        "blockId": "notify",
+        "index": 0
+      },
+      "label": "success"
+    }
+  ],
+  "config": {
+    "execution_mode": "polling",
+    "poll_interval_seconds": 300,
+    "enable_auto_execution": true,
+    "dry_run": false,
+    "risk_limits": {
+      "max_gpus_listed": 10,
+      "min_profit_per_gpu": 0.10
+    }
+  },
+  "metadata": {
+    "created_at": "2026-01-24T00:00:00Z",
+    "tags": ["gpu", "vast.ai", "capacity-optimization", "automation"],
+    "author": "Claude Code",
+    "notes": "This workflow demonstrates the first non-trading domain implementation using the generic abstraction layer. The same workflow pattern can be adapted for ad budget optimization, ecommerce arbitrage, and other domains."
+  }
+}
