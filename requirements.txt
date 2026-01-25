@@ -1,5 +1,5 @@
 # Polymarket API client - pinned to specific version for stability
-py-clob-client==0.26.0
+py-clob-client==0.34.5
 
 # WebSocket client for market data (CLOB WSS)
 websockets==12.0
@@ -14,12 +14,11 @@ python-dotenv==1.0.1
 rich==13.7.1
 
 # Web3 for on-chain balance verification
-web3==6.20.0
+web3>=6.20.1
 
 # Required by py-clob-client
-py-eip712-structs==2.0.0
-eth-account==0.11.2
-eth-keys==0.4.0
+# eip712-structs-ng==2.0.1
+# eth-keys==0.4.0
 
 # Testing dependencies
 pytest==7.4.3
@@ -35,5 +34,6 @@ pydantic==2.5.3                 # Configuration management
 pydantic-settings==2.1.0        # Environment variable loading
 
 # WebSocket server dependencies (Week 3)
-python-socketio==5.11.0         # Socket.IO server for real-time events
-aiohttp==3.9.1                  # Async HTTP server for Socket.IO
+python-socketio==5.14.0         # Socket.IO server for real-time events
+aiohttp==3.13.3                  # Async HTTP server for Socket.IO
+asyncio==4.0.0
