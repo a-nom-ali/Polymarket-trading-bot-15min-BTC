@@ -507,13 +507,23 @@ class WorkflowWebSocketServer:
         # Set up event subscription
         await self.setup()
 
-        # Run server
-        web.run_app(
-            self.app,
-            host=host,
-            port=port,
-            print=lambda x: logger.info("aiohttp_message", message=x)
-        )
+        # Create and start app runner (works inside existing async context)
+        runner = web.AppRunner(self.app)
+        await runner.setup()
+
+        try:
+            site = web.TCPSite(runner, host, port)
+            await site.start()
+            logger.info("websocket_server_started", host=host, port=port)
+
+            # Keep server running until interrupted
+            while True:
+                await asyncio.sleep(3600)  # Sleep for 1 hour, will be interrupted by signals
+
+        except asyncio.CancelledError:
+            logger.info("websocket_server_cancelled")
+        finally:
+            await runner.cleanup()
 
     def get_stats(self) -> dict:
         """
