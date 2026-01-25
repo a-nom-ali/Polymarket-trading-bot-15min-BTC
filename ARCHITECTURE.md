@@ -1,4 +1,3 @@
-```
 # Architecture Documentation
 
 This document describes the multi-provider, multi-strategy trading bot architecture.
@@ -11,20 +10,20 @@ The bot is built with **three distinct layers** for maximum flexibility and exte
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      Trading Bot System                          │
+│                      Trading Bot System                         │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐  │
-│  │   Provider   │─────▶│   Strategy   │─────▶│     Bot      │  │
-│  │    Layer     │      │    Layer     │      │ Orchestrator │  │
-│  └──────────────┘      └──────────────┘      └──────────────┘  │
-│         │                     │                      │           │
-│         ▼                     ▼                      ▼           │
+│                                                                 │
+│  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐   │
+│  │   Provider   │─────▶│   Strategy   │─────▶│     Bot      │   │
+│  │    Layer     │      │    Layer     │      │ Orchestrator │   │
+│  └──────────────┘      └──────────────┘      └──────────────┘   │
+│         │                     │                      │          │
+│         ▼                     ▼                      ▼          │
 │  • Polymarket          • Binary Arb          • Single           │
 │  • Luno (REST+WS)      • Copy Trading        • Multi            │
 │  • Extensible          • Cross-Exchange      • Risk Mgmt        │
-│                        • Market Making                           │
-│                                                                   │
+│                        • Market Making                          │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -774,4 +773,3 @@ await strategy.start()
 ---
 
 *Architecture designed for extensibility, testability, and production deployment.*
-```
